@@ -37,8 +37,8 @@ def main():
 def generate_from_df(base_df, output_path):
     output_path.mkdir(parents=True, exist_ok=True)
 
-    densities = [1]#, 5, 10]
-    instances = range(2)#range(10)
+    densities = [1, 5, 10]
+    instances = range(10)
 
     nb_apps = len(base_df.index)
     cols = ['nb_instances', 'core', 'memory', 'inter_degree', 'inter_aff']

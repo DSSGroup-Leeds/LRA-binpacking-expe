@@ -69,7 +69,7 @@ def generate_from_df(df, output_path, pop_replicas, wei_replicas):
 
     size_df = len(df)
 
-    list_nb_apps = [100]#[10000, 50000, 100000]
+    list_nb_apps = [10000, 50000, 100000]
 
     # We want a density of 1% or 0.5%, so a value 0.01 or 0.005
     densities = {
@@ -86,8 +86,6 @@ def generate_from_df(df, output_path, pop_replicas, wei_replicas):
         base_df = create_base_df(nb_apps, size_df, df, pop_replicas, wei_replicas)
 
         for (s_density, d) in densities.items():
-            #print(f"Starting density {d}")
-
             # Generate Arbitrary graph + df
             df_arbitrary = create_arbitrary_df(nb_apps, d, base_df)
             outfile = output_path/f"large_scale_{nb_apps}_arbitrary_d{s_density}_{i}.csv"
