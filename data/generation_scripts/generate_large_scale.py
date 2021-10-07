@@ -71,11 +71,9 @@ def generate_from_df(df, output_path, pop_replicas, wei_replicas):
 
     list_nb_apps = [10000, 50000, 100000]
 
-    # We want a density of 1% or 0.5%, so a value 0.01 or 0.005
-    densities = {
-        "01" : 0.01,
-        "005": 0.005
-    }
+    # We want a density of 0.5%, so a value of 0.005
+    d = 0.005
+    s_density = "005"
     instances = range(10)
 
     cols = ["nb_instances", "core", "memory", "inter_degree", "inter_aff"]
@@ -85,26 +83,25 @@ def generate_from_df(df, output_path, pop_replicas, wei_replicas):
 
         base_df = create_base_df(nb_apps, size_df, df, pop_replicas, wei_replicas)
 
-        for (s_density, d) in densities.items():
-            # Generate Arbitrary graph + df
-            df_arbitrary = create_arbitrary_df(nb_apps, d, base_df)
-            outfile = output_path/f"large_scale_{nb_apps}_arbitrary_d{s_density}_{i}.csv"
-            df_arbitrary.to_csv(outfile, sep='\t', encoding='utf-8', columns=cols)
-            del df_arbitrary # for memory reasons
+        # Generate Arbitrary graph + df
+        df_arbitrary = create_arbitrary_df(nb_apps, d, base_df)
+        outfile = output_path/f"large_scale_{nb_apps}_arbitrary_d{s_density}_{i}.csv"
+        df_arbitrary.to_csv(outfile, sep='\t', encoding='utf-8', columns=cols)
+        del df_arbitrary # for memory reasons
 
 
-            # Generate Normal graph + df
-            df_normal = create_normal_df(nb_apps, d, base_df)
-            outfile = output_path/f"large_scale_{nb_apps}_normal_d{s_density}_{i}.csv"
-            df_normal.to_csv(outfile, sep='\t', encoding='utf-8', columns=cols)
-            del df_normal # for memory reasons
+        # Generate Normal graph + df
+        df_normal = create_normal_df(nb_apps, d, base_df)
+        outfile = output_path/f"large_scale_{nb_apps}_normal_d{s_density}_{i}.csv"
+        df_normal.to_csv(outfile, sep='\t', encoding='utf-8', columns=cols)
+        del df_normal # for memory reasons
 
 
-            # Generate Threshold graph + df
-            df_threshold = create_threshold_df(nb_apps, d, base_df)
-            outfile = output_path/f"large_scale_{nb_apps}_threshold_d{s_density}_{i}.csv"
-            df_threshold.to_csv(outfile, sep='\t', encoding='utf-8', columns=cols)
-            del df_threshold # for memory reasons
+        # Generate Threshold graph + df
+        df_threshold = create_threshold_df(nb_apps, d, base_df)
+        outfile = output_path/f"large_scale_{nb_apps}_threshold_d{s_density}_{i}.csv"
+        df_threshold.to_csv(outfile, sep='\t', encoding='utf-8', columns=cols)
+        del df_threshold # for memory reasons
 
         del base_df # just in case
 
