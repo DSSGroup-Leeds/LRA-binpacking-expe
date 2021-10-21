@@ -14,3 +14,9 @@ The scripts needs the 3 following CSV files from the TClab dataset:
 First, the script `generate_TClab_dataset.py` should be run to format the base datasets from the TClab files.
 Then, the scripts `generate_higher_density.py` and `generate_large_scale.py` can be run to generate all instances of higher density and large scale, both for fixed and time-varying resource requirement.
 
+
+Building executables
+====================
+
+default.nix contains a recipe to build all executables needed.
+With nix installed, simply run `nix-build default.nix -A binpack` and nix will do the rest and create a `result/bin` folder with all built executables.

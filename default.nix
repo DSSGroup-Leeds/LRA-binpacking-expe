@@ -39,6 +39,9 @@ let
             src = pkgs.lib.sourceByRegex ./Binpack_CPP [
                 "^src"
                 "^src/.*\.?pp"
+                "^src/CMakeLists.txt"
+                "^src/Binpack_lib"
+                "^src/algos"
                 "^src/Binpack_lib/.*\.?pp"
                 "^src/Binpack_lib/csv.h"
                 "^src/Binpack_lib/CMakeLists.txt"
