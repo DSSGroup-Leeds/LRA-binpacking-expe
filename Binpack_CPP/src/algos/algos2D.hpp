@@ -82,6 +82,15 @@ private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
 
+/************ First Fit Decreasing CPU Affinity *********/
+class Algo2DFFDCPU : public Algo2DFF
+{
+public:
+    Algo2DFFDCPU(const Instance2D &instance);
+private:
+    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+};
+
 
 
 /************ First Fit Decreasing Average Affinity *********/
@@ -159,6 +168,17 @@ class Algo2DBFDMax : public Algo2DBFDAvg
 {
 public:
     Algo2DBFDMax(const Instance2D &instance);
+private:
+    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+    virtual void updateBinMeasure(Bin2D* bin);
+};
+
+
+/************ Best Fit Decreasing CPU Affinity *********/
+class Algo2DBFDCPU : public Algo2DBFDAvg
+{
+public:
+    Algo2DBFDCPU(const Instance2D &instance);
 private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
     virtual void updateBinMeasure(Bin2D* bin);

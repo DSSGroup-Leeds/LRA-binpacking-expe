@@ -15,6 +15,7 @@ AlgoFit2D* createAlgo2D(const std::string& algo_name, const Instance2D &instance
     {
         return new Algo2DFFDDegree(instance);
     }
+
     else if (algo_name == "FFD-Avg")
     {
         return new Algo2DFFDAvg(instance);
@@ -22,6 +23,10 @@ AlgoFit2D* createAlgo2D(const std::string& algo_name, const Instance2D &instance
     else if (algo_name == "FFD-Max")
     {
         return new Algo2DFFDMax(instance);
+    }
+    else if (algo_name == "FFD-CPU")
+    {
+        return new Algo2DFFDCPU(instance);
     }
     else if (algo_name == "FFD-AvgExpo")
     {
@@ -43,6 +48,10 @@ AlgoFit2D* createAlgo2D(const std::string& algo_name, const Instance2D &instance
     else if(algo_name == "BFD-Max")
     {
         return new Algo2DBFDMax(instance);
+    }
+    else if (algo_name == "BFD-CPU")
+    {
+        return new Algo2DBFDCPU(instance);
     }
     else if(algo_name == "BFD-AvgExpo")
     {
@@ -318,6 +327,17 @@ void Algo2DFFDDegree::sortApps(AppList2D::iterator first_app, AppList2D::iterato
 }
 
 
+/************ First Fit Decreasing CPU Affinity *********/
+Algo2DFFDCPU::Algo2DFFDCPU(const Instance2D &instance):
+    Algo2DFF(instance)
+{ }
+
+void Algo2DFFDCPU::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_CPU_decreasing);
+}
+
+
 
 /************ First Fit Decreasing Average Affinity *********/
 Algo2DFFDAvg::Algo2DFFDAvg(const Instance2D &instance):
@@ -433,6 +453,22 @@ void Algo2DBFDMax::updateBinMeasure(Bin2D *bin)
     // measure = max(normalised residual cpu, normalised residual memory)
     float measure = std::max((bin->getAvailableCPUCap() / bin->getMaxCPUCap()), (bin->getAvailableMemCap() / bin->getMaxMemCap()));
     bin->setMeasure(measure);
+}
+
+
+/************ Best Fit Decreasing CPU Affinity *********/
+Algo2DBFDCPU::Algo2DBFDCPU(const Instance2D &instance):
+    Algo2DBFDAvg(instance)
+{ }
+
+void Algo2DBFDCPU::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_CPU_decreasing);
+}
+
+void Algo2DBFDCPU::updateBinMeasure(Bin2D *bin)
+{
+    bin->setMeasure(bin->getAvailableCPUCap());
 }
 
 
