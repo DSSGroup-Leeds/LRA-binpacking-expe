@@ -172,6 +172,7 @@ public:
     Algo2DBFDAvgExpo(const Instance2D &instance);
 private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+    virtual void sortBins();
     virtual void createNewBin();
     virtual void addItemToBin(Application2D *app, int replica_id, Bin2D *bin);
     virtual void updateBinMeasure(Bin2D* bin);
@@ -190,6 +191,7 @@ public:
 
 protected:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+    virtual void sortBins();
     virtual void updateBinMeasure(Bin2D* bin);
 };
 
@@ -201,6 +203,7 @@ public:
 
 protected:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+    virtual void sortBins();
     virtual void updateBinMeasure(Bin2D* bin);
 };
 

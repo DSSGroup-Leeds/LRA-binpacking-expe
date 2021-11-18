@@ -449,6 +449,12 @@ void Algo2DBFDAvgExpo::sortApps(AppList2D::iterator first_app, AppList2D::iterat
     stable_sort(first_app, end_it, application2D_comparator_avgexpo_size_decreasing);
 }
 
+void Algo2DBFDAvgExpo::sortBins() {
+    // The measure of the bins should have been updated before
+    // Need to sort all bins since all measures have changed
+    stable_sort(bins.begin()+curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
+}
+
 void Algo2DBFDAvgExpo::createNewBin()
 {
     //std::cout << "Opening a new bin of index " << next_bin_id << std::endl; //TODO remove
@@ -497,6 +503,12 @@ void Algo2DBFDSurrogate::sortApps(AppList2D::iterator first_app, AppList2D::iter
     stable_sort(first_app, end_it, application2D_comparator_surrogate_size_decreasing);
 }
 
+void Algo2DBFDSurrogate::sortBins() {
+    // The measure of the bins should have been updated before
+    // Need to sort all bins since all measures have changed
+    stable_sort(bins.begin()+curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
+}
+
 void Algo2DBFDSurrogate::updateBinMeasure(Bin2D *bin)
 {
     // measure = lambda norm residual cpu + (1-lambda) * norm residual mem
@@ -521,6 +533,12 @@ Algo2DBFDExtendedSum::Algo2DBFDExtendedSum(const Instance2D &instance):
 void Algo2DBFDExtendedSum::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
 {
     stable_sort(first_app, end_it, application2D_comparator_extsum_size_decreasing);
+}
+
+void Algo2DBFDExtendedSum::sortBins() {
+    // The measure of the bins should have been updated before
+    // Need to sort all bins since all measures have changed
+    stable_sort(bins.begin()+curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
 }
 
 void Algo2DBFDExtendedSum::updateBinMeasure(Bin2D *bin)
@@ -830,7 +848,7 @@ void Algo2DBinFFDL2Norm::computeMeasures(AppList2D::iterator start_list, AppList
         // Use normalized values of app size and bin residual capacity
         float a = (bin->getAvailableCPUCap() / bin->getMaxCPUCap()) - app->getNormalizedCPU();
         float b = (bin->getAvailableMemCap() / bin->getMaxMemCap()) - app->getNormalizedMemory();
-        float measure = a*a + b*b;
+        float measure = - a*a + b*b;
         app->setMeasure(measure);
     }
 }
