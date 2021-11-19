@@ -920,3 +920,168 @@ void Algo2DBinFFDFitness::computeMeasures(AppList2D::iterator start_list, AppLis
         app->setMeasure(a+b);
     }
 }
+
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/*********** Spread replicas with Worst Fit *********/
+Algo2DSpreadWFAvg::Algo2DSpreadWFAvg(const Instance2D &instance):
+    AlgoFit2D(instance)
+{ }
+
+int Algo2DSpreadWFAvg::solveInstanceSpread(int LB_bins, int FF_bins)
+{
+    // First, try to find a solution with FF_bins
+    if (!trySolve(FF_bins))
+    {
+        std::cout << "SpreadWF cannot improve on the solution of FF" << std::endl;
+        return -1;
+    }
+
+    // Store the current solution
+    BinList2D best_bins = getBinsCopy();
+    int best_sol = FF_bins;
+    int low_bound = LB_bins;
+    int target_bins;
+
+    // Then iteratively try to improve on the solution
+    int nb_iter = 0;
+    while(low_bound < best_sol)
+    {
+        //target_bins = (low_bound + 3*best_sol)/4;
+        //target_bins = (3*low_bound + best_sol)/4;
+        target_bins = (low_bound + best_sol)/2;
+        //std::cout << "Trying with " << target_bins << " bins (LB: " << low_bound  << " UB: " << best_sol<< ")" << std::endl;
+
+        clearSolution();
+        if (trySolve(target_bins))
+        {
+
+            // Update the best solution
+            best_sol = target_bins;
+            for (Bin2D* bin : best_bins)
+            {
+                if (bin != nullptr)
+                {
+                    delete bin;
+                }
+            }
+            best_bins.clear();
+            best_bins = getBinsCopy();
+        }
+        else
+        {
+            // Update bound of search
+            low_bound = target_bins+1;
+        }
+        nb_iter+=1;
+    }
+    setSolution(best_bins);
+    //std::cout << "Found best solution in " << nb_iter << " iterations" << std::endl;
+    return best_sol;
+}
+
+bool Algo2DSpreadWFAvg::trySolve(int nb_bins)
+{
+    bins.reserve(nb_bins);
+    for (int i = 0; i < nb_bins; ++i)
+    {
+        Bin2D* bin = new Bin2D(i, bin_cpu_capacity, bin_mem_capacity);
+        updateBinMeasure(bin);
+        bins.push_back(bin);
+    }
+
+    // For each app in the list, try to put all replicas in separate bins
+    Bin2D* curr_bin = nullptr;
+    sortApps(apps.begin(), apps.end());
+    auto current_app_it = apps.begin();
+    while(current_app_it != apps.end())
+    {
+        Application2D * app = *current_app_it;
+        curr_bin_index = 0;
+        int replica_index = app->getNbReplicas()-1;
+        while(replica_index >= 0) // There are still replicas to pack
+        {
+            bool replica_packed = false;
+            int start_bin_index = curr_bin_index;
+            while(!replica_packed)
+            {
+                curr_bin = bins.at(curr_bin_index);
+                if (checkItemToBin(app, curr_bin))
+                {
+                    addItemToBin(app, replica_index, curr_bin);
+                    updateBinMeasure(curr_bin);
+                    replica_packed = true;
+                    replica_index -= 1;
+                }
+
+                // Advance to next bin
+                if (curr_bin_index == (nb_bins-1))
+                {
+                    curr_bin_index = 0; // Reset
+                }
+                else
+                {
+                    curr_bin_index += 1;
+                }
+
+                // If all bins were checked and the item cannot be packed
+                if (!replica_packed and (curr_bin_index == start_bin_index))
+                {
+                    //std::cout << "Could not pack replica " << replica_index << " of app " << app->getId() << std::endl;
+                    return false;
+                }
+            }
+        }
+        //std::cout << "All replicas of app " << app->getId() << " were packed. Updating bins order" << std::endl;
+        current_app_it++;
+        //updateBinMeasures();
+        sortBins();
+    }
+    return true;
+}
+
+
+void Algo2DSpreadWFAvg::updateBinMeasure(Bin2D* bin)
+{
+    float measure = (bin->getAvailableCPUCap() / bin->getMaxCPUCap()) + (bin->getAvailableMemCap() / bin->getMaxMemCap());
+    bin->setMeasure(measure);
+}
+/*void Algo2DSpreadWF::updateBinMeasures()
+{
+    for (Bin2D* bin : bins)
+    {
+        float measure = (bin->getAvailableCPUCap() / bin->getMaxCPUCap()) + (bin->getAvailableMemCap() / bin->getMaxMemCap());
+        bin->setMeasure(measure);
+    }
+}*/
+
+
+void Algo2DSpreadWFAvg::allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch)
+{
+    std::cout << "For Spread algorithm please call 'solveInstanceSpread' instead" << std::endl;
+    return;
+}
+
+void Algo2DSpreadWFAvg::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_avg_size_decreasing);
+}
+
+void Algo2DSpreadWFAvg::sortBins()
+{
+    stable_sort(bins.begin(), bins.end(), bin2D_comparator_measure_decreasing);
+}
+
+bool Algo2DSpreadWFAvg::checkItemToBin(Application2D* app, Bin2D* bin) const
+{
+    return (bin->doesItemFit(app->getCPUSize(), app->getMemorySize())) and (bin->isAffinityCompliant(app));
+}
+
+void Algo2DSpreadWFAvg::addItemToBin(Application2D* app, int replica_id, Bin2D* bin)
+{
+    bin->addNewConflict(app);
+    bin->addItem(app, replica_id);
+}

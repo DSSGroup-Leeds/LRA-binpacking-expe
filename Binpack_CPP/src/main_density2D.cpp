@@ -11,7 +11,7 @@ using namespace std;
 using namespace std::chrono;
 
 
-std::string run_for_instance(const Instance2D & instance, const vector<string> & list_algos)
+/*std::string run_for_instance(const Instance2D & instance, const vector<string> & list_algos)
 {
     int LB_cpu = BPP2D_LBcpu(instance);
     int LB_mem = BPP2D_LBmem(instance);
@@ -95,16 +95,78 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
 
     f.close();
     return 0;
-}
+}*/
 
 
 int main(int argc, char** argv)
 {
-    string data_path;
+    //string data_path;
+    string data_path = "/home/mommess/Documents/Leeds_research/datasets/scheduler_trace_datasets/datasets/TClab_data/";
 
     int bin_cpu_capacity;
     int bin_mem_capacity;
-    if (argc > 3)
+    if (argc > 2)
+    {
+        bin_cpu_capacity = stoi(argv[1]);
+        bin_mem_capacity = stoi(argv[2]);
+    }
+
+
+    string instance_name("application_dataset_full");
+    string filename = data_path + instance_name + ".csv";
+    //string instance_name("arbitrary_d1_0");
+    //string filename = data_path + "high_density/2D/" + instance_name + ".csv";
+    Instance2D instance(instance_name, bin_cpu_capacity, bin_mem_capacity, filename);
+
+    std::cout << instance_name << std::endl;
+
+    int LB_cpu = BPP2D_LBcpu(instance);
+    int LB_mem = BPP2D_LBmem(instance);
+    int LB = std::max(LB_cpu, LB_mem);
+
+    Algo2DFF * algoFF = new Algo2DFF(instance);
+    int FF_bins = algoFF->solveInstance(LB);
+
+    std::cout << "LB: " << LB << "\nFF: " << FF_bins << std::endl;
+
+    vector<string> list_algos = {
+        //"FF",
+        "FFD-Degree",
+
+        //"FFD-Avg", "FFD-Max",
+        "FFD-CPU",
+        //"FFD-AvgExpo", "FFD-Surrogate",
+        //"FFD-ExtendedSum",
+
+        "BFD-Avg", "BFD-Max",
+        "BFD-CPU",
+        "BFD-AvgExpo", "BFD-Surrogate",
+        "BFD-ExtendedSum",
+
+        //"FFD-L2Norm", "FFD-DotProduct", "FFD-Fitness",
+        //"NodeCount",
+    };
+
+    for (string & algo_name : list_algos)
+    {
+        AlgoFit2D * algo = createAlgo2D(algo_name, instance);
+        auto start = high_resolution_clock::now();
+        int sol = algo->solveInstance(LB+1000);
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(stop - start);
+        cout << algo_name << ": " << sol << " in " << to_string((float)duration.count() / 1000) << endl;
+    }
+
+
+    Algo2DSpreadWF * algo = new Algo2DSpreadWF(instance);
+    auto start = high_resolution_clock::now();
+    int sol = algo->solveInstanceSpread(LB, FF_bins);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    cout << "WF: " << sol << " in " << to_string((float)duration.count() / 1000) << endl;
+
+
+    /*if (argc > 3)
     {
         bin_cpu_capacity = stoi(argv[1]);
         bin_mem_capacity = stoi(argv[2]);
@@ -114,9 +176,27 @@ int main(int argc, char** argv)
     {
         cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <data_path>" << endl;
         return -1;
-    }
+    }*/
 
-    string input_path(data_path+"/input/");
+    /*
+
+    TODO
+
+    - Fix measure computation for L2Norm: there is a minus sign
+      because we want the app with the smallest value of the measure.
+
+    - Try to change the main Fit algorithm to put as much replicas as possible
+      when an app and a node is selected.
+      (for the moment we put a single replica and then recompute the measures
+       and sort the bins)
+
+    - Try to optimise node-centric approach:
+      only compute the measure of apps if they can be packed into the current bin.
+      (cost of feasibility check is smaller than cost of computing the measure)
+
+    */
+
+    /*string input_path(data_path+"/input/");
     string output_path(data_path+"/results/");
 
     string outfile(output_path + "density2D_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + ".csv");
@@ -137,7 +217,7 @@ int main(int argc, char** argv)
     };
 
     run_list_algos(input_path, outfile, list_algos, bin_cpu_capacity, bin_mem_capacity);
-    cout << "Run successful" << endl;
+    cout << "Run successful" << endl;*/
     return 0;
 }
 

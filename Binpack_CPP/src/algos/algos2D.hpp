@@ -287,4 +287,33 @@ protected:
     virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
 };
 
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/*********** Spread replicas with Worst Fit *********/
+class Algo2DSpreadWFAvg : public AlgoFit2D
+{
+public:
+    Algo2DSpreadWFAvg(const Instance2D &instance);
+
+    int solveInstanceSpread(int LB_bins, int FF_bins);
+private:
+    bool trySolve(int nb_bins); // Try to find a solution with the given bins
+    //void updateBinMeasures();
+    void updateBinMeasure(Bin2D* bin);
+
+    virtual void allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch);
+
+    virtual void sortBins();
+    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+    virtual bool checkItemToBin(Application2D* app, Bin2D* bin) const;
+    virtual void addItemToBin(Application2D* app, int replica_id, Bin2D* bin);
+};
+
+
+
+
+
 #endif // ALGOS2D_HPP
