@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <cmath> // For exp
 
-AlgoFit2D* createAlgo2D(const std::string& algo_name, const Instance2D &instance)
+AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance)
 {
     if (algo_name == "FF")
     {
@@ -71,15 +71,15 @@ AlgoFit2D* createAlgo2D(const std::string& algo_name, const Instance2D &instance
         return new Algo2DNodeCount(instance);
     }
 
-    else if (algo_name == "FFD-DotProduct")
+    else if (algo_name == "NCD-DotProduct")
     {
         return new Algo2DBinFFDDotProduct(instance);
     }
-    else if (algo_name == "FFD-L2Norm")
+    else if (algo_name == "NCD-L2Norm")
     {
         return new Algo2DBinFFDL2Norm(instance);
     }
-    else if (algo_name == "FFD-Fitness")
+    else if (algo_name == "NCD-Fitness")
     {
         return new Algo2DBinFFDFitness(instance);
     }
@@ -97,6 +97,8 @@ AlgoFit2D::AlgoFit2D(const Instance2D &instance):
     total_replicas(instance.getTotalReplicas()),
     sum_cpu(instance.getSumCPU()),
     sum_mem(instance.getSumMem()),
+    norm_sum_cpu(sum_cpu/bin_cpu_capacity),
+    norm_sum_mem(sum_mem/bin_mem_capacity),
     next_bin_index(0),
     curr_bin_index(0),
     solved(false)
@@ -515,11 +517,8 @@ void Algo2DBFDAvgExpo::addItemToBin(Application2D *app, int replica_id, Bin2D *b
 void Algo2DBFDAvgExpo::updateBinMeasure(Bin2D *bin)
 {
     // measure = exp(0.01* (sum residual capacity all bins)/(nb bin * bin capacity) * normalised residual cpu + same with memory
-    int bin_cpu_cap = bin->getMaxCPUCap();
-    int bin_mem_cap = bin->getMaxMemCap();
-
-    float factor_cpu = (std::exp(0.01 * total_residual_cpu / (bin_cpu_cap * bins.size()))) / bin_cpu_cap;
-    float factor_mem = (std::exp(0.01 * total_residual_mem / (bin_mem_cap * bins.size()))) / bin_mem_cap;
+    float factor_cpu = (std::exp(0.01 * total_residual_cpu / (bin_cpu_capacity * bins.size()))) / bin_cpu_capacity;
+    float factor_mem = (std::exp(0.01 * total_residual_mem / (bin_mem_capacity * bins.size()))) / bin_mem_capacity;
 
     for(auto it_bin = (bins.begin()+curr_bin_index); it_bin != bins.end(); ++it_bin)
     {
@@ -548,14 +547,11 @@ void Algo2DBFDSurrogate::sortBins() {
 void Algo2DBFDSurrogate::updateBinMeasure(Bin2D *bin)
 {
     // measure = lambda norm residual cpu + (1-lambda) * norm residual mem
-    int bin_cpu_cap = bin->getMaxCPUCap();
-    int bin_mem_cap = bin->getMaxMemCap();
-
     float lambda = ((float)total_residual_cpu) / (total_residual_cpu + total_residual_mem);
 
     for(auto it_bin = (bins.begin()+curr_bin_index); it_bin != bins.end(); ++it_bin)
     {
-        float measure = lambda * ((*it_bin)->getAvailableCPUCap() / bin_cpu_cap) + (1-lambda) * ((*it_bin)->getAvailableMemCap() / bin_mem_cap);
+        float measure = lambda * ((*it_bin)->getAvailableCPUCap() / bin_cpu_capacity) + (1-lambda) * ((*it_bin)->getAvailableMemCap() / bin_mem_capacity);
         (*it_bin)->setMeasure(measure);
     }
 }
@@ -790,6 +786,14 @@ void Algo2DBinFFDDotProduct::computeMeasures(AppList2D::iterator start_list, App
     }
 }
 
+Bin2D* Algo2DBinFFDDotProduct::createNewBinRet()
+{
+    Bin2D* bin = new Bin2D(next_bin_index, bin_cpu_capacity, bin_mem_capacity);
+    next_bin_index += 1;
+    bins.push_back(bin);
+    return bin;
+}
+
 void Algo2DBinFFDDotProduct::allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch)
 {
     std::unordered_map<std::string, int> next_id_replicas;
@@ -809,9 +813,7 @@ void Algo2DBinFFDDotProduct::allocateBatch(AppList2D::iterator first_app, AppLis
     while(next_treated_app_it != end_list)
     {
         // Open a new bin
-        curr_bin = new Bin2D(next_bin_index, bin_cpu_capacity, bin_mem_capacity);
-        next_bin_index += 1;
-        bins.push_back(curr_bin);
+        curr_bin = createNewBinRet();
 
         auto current_app_it = next_treated_app_it;
         // This is a quick safe guard to avoid infinite loops and running out of memory
@@ -893,24 +895,45 @@ void Algo2DBinFFDL2Norm::computeMeasures(AppList2D::iterator start_list, AppList
 
 /********* Bin Centric FFD Fitness ***************/
 Algo2DBinFFDFitness::Algo2DBinFFDFitness(const Instance2D &instance):
-    Algo2DBinFFDDotProduct(instance)
+    Algo2DBinFFDDotProduct(instance),
+    total_residual_cpu(0),
+    total_residual_mem(0)
 { }
+
+Bin2D* Algo2DBinFFDFitness::createNewBinRet()
+{
+    Bin2D* bin = new Bin2D(next_bin_index, bin_cpu_capacity, bin_mem_capacity);
+    next_bin_index += 1;
+    bins.push_back(bin);
+
+    total_residual_cpu += bin_cpu_capacity;
+    total_residual_mem += bin_mem_capacity;
+
+    return bin;
+}
+
+void Algo2DBinFFDFitness::addItemToBin(Application2D *app, int replica_id, Bin2D *bin)
+{
+    bin->addNewConflict(app);
+    bin->addItem(app, replica_id);
+
+    total_residual_cpu -= app->getCPUSize();
+    total_residual_mem -= app->getMemorySize();
+}
+
 
 void Algo2DBinFFDFitness::computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D *bin)
 {
-    // TODO This complexity is too much
-    // Could be greatly improved by keeping the values of the already
-    // packed bins (since the algo is bin-centric)
-    float sum_res_cpu = 0.0;
-    float sum_res_mem = 0.0;
-    for(Bin2D * bb : bins)
+    for(auto it = start_list; it != end_list; ++it)
     {
-        sum_res_cpu += bb->getAvailableCPUCap();
-        sum_res_mem += bb->getAvailableMemCap();
+        Application2D * app = *it;
+        float a = (app->getNormalizedCPU() * bin->getAvailableCPUCap()) / (norm_sum_cpu * total_residual_cpu);
+        float b = (app->getNormalizedMemory() * bin->getAvailableMemCap()) / (norm_sum_mem * total_residual_mem);
+
+        app->setMeasure(a+b);
     }
-    // Use normalized values of app size and bin residual capacity
-    sum_res_cpu = sum_res_cpu / bin->getMaxCPUCap();
-    sum_res_mem = sum_res_mem / bin->getMaxMemCap();
+}
+
     for(auto it = start_list; it != end_list; ++it)
     {
         Application2D * app = *it;

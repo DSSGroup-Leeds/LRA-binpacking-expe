@@ -7,7 +7,7 @@
 
 // Base class of AlgoFit tailored for 2D bin packing
 // With placeholder functions to sort the items, sort the bins
-// and determine whether an items can be placed in a bin
+// and determine whether an item can be placed in a bin
 class AlgoFit2D
 {
 public:
@@ -46,6 +46,8 @@ protected:
     int total_replicas;
     int sum_cpu;
     int sum_mem;
+    float norm_sum_cpu;
+    float norm_sum_mem;
     int next_bin_index;
     int curr_bin_index;
     AppList2D apps;
@@ -54,8 +56,7 @@ protected:
 };
 
 // Creator of AlgoFit2D variant w.r.t. given algo_name
-AlgoFit2D* createAlgo2D(const std::string& algo_name, const Instance2D &instance);
-
+AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance);
 
 /* ================================================ */
 /* ================================================ */
@@ -261,6 +262,7 @@ public:
 private:
     virtual void allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch);
 protected:
+    virtual Bin2D* createNewBinRet();
     virtual bool isBinFilled(Bin2D* bin);
     virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D* bin);
 };
@@ -282,6 +284,16 @@ class Algo2DBinFFDFitness : public Algo2DBinFFDDotProduct
 {
 public:
     Algo2DBinFFDFitness(const Instance2D &instance);
+
+protected:
+    virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
+
+    virtual Bin2D* createNewBinRet();
+    virtual void addItemToBin(Application2D *app, int replica_id, Bin2D *bin);
+    int total_residual_cpu;
+    int total_residual_mem;
+};
+
 
 protected:
     virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
