@@ -229,6 +229,67 @@ protected:
 };
 
 
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/************ Worst Fit Decreasing Avg Affinity *********/
+class Algo2DWFDAvg : public Algo2DBFDAvg
+{
+public:
+    Algo2DWFDAvg(const Instance2D &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing Max Affinity *********/
+class Algo2DWFDMax : public Algo2DBFDMax
+{
+public:
+    Algo2DWFDMax(const Instance2D &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing CPU Affinity *********/
+class Algo2DWFDCPU : public Algo2DBFDCPU
+{
+public:
+    Algo2DWFDCPU(const Instance2D &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing AvgExpo Affinity *********/
+class Algo2DWFDAvgExpo : public Algo2DBFDAvgExpo
+{
+public:
+    Algo2DWFDAvgExpo(const Instance2D &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing Surrogate Affinity *********/
+class Algo2DWFDSurrogate : public Algo2DBFDSurrogate
+{
+public:
+    Algo2DWFDSurrogate(const Instance2D &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing ExtendedSum Affinity *********/
+class Algo2DWFDExtendedSum : public Algo2DBFDExtendedSum
+{
+public:
+    Algo2DWFDExtendedSum(const Instance2D &instance);
+private:
+    virtual void sortBins();
+};
+
+
+
 /* ================================================ */
 /* ================================================ */
 /* ================================================ */
@@ -304,17 +365,19 @@ protected:
 /* ================================================ */
 /* ================================================ */
 /* ================================================ */
-/*********** Spread replicas with Worst Fit *********/
+/*********** Spread replicas Worst Fit Avg **********/
 class Algo2DSpreadWFAvg : public AlgoFit2D
 {
 public:
     Algo2DSpreadWFAvg(const Instance2D &instance);
 
-    int solveInstanceSpread(int LB_bins, int FF_bins);
+    int solveInstanceSpread(int LB_bins, int UB_bins);
 private:
     bool trySolve(int nb_bins); // Try to find a solution with the given bins
-    //void updateBinMeasures();
-    void updateBinMeasure(Bin2D* bin);
+
+    virtual void createBins(int nb_bins);
+    virtual void updateBinMeasure(Bin2D* bin);
+    virtual void updateBinMeasures();          // If all bins need to be updated
 
     virtual void allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch);
 
@@ -324,8 +387,61 @@ private:
     virtual void addItemToBin(Application2D* app, int replica_id, Bin2D* bin);
 };
 
+/*********** Spread replicas Worst Fit Max **********/
+class Algo2DSpreadWFMax : public Algo2DSpreadWFAvg
+{
+public:
+    Algo2DSpreadWFMax(const Instance2D &instance);
+
+private:
+    virtual void updateBinMeasure(Bin2D* bin);
+    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+};
 
 
+/*********** Spread replicas Worst Fit AvgExpo **********/
+class Algo2DSpreadWFAvgExpo : public Algo2DSpreadWFAvg
+{
+public:
+    Algo2DSpreadWFAvgExpo(const Instance2D &instance);
 
+private:
+    virtual void createBins(int nb_bins);
+    virtual void updateBinMeasure(Bin2D* bin);
+    virtual void updateBinMeasures();
+    virtual void addItemToBin(Application2D *app, int replica_id, Bin2D *bin);
+    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+
+protected:
+    int total_residual_cpu;
+    int total_residual_mem;
+};
+
+/*********** Spread replicas Worst Fit Surrogate **********/
+class Algo2DSpreadWFSurrogate : public Algo2DSpreadWFAvgExpo
+{
+public:
+    Algo2DSpreadWFSurrogate(const Instance2D &instance);
+
+private:
+    virtual void updateBinMeasure(Bin2D* bin);
+    virtual void updateBinMeasures();
+    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+};
+
+
+/*********** Spread replicas Worst Fit Extended Sum **********/
+class Algo2DSpreadWFExtendedSum : public Algo2DSpreadWFAvgExpo
+{
+public:
+    Algo2DSpreadWFExtendedSum(const Instance2D &instance);
+
+private:
+    virtual void updateBinMeasure(Bin2D* bin);
+    virtual void updateBinMeasures();
+    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
+};
+
+Algo2DSpreadWFAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance);
 
 #endif // ALGOS2D_HPP

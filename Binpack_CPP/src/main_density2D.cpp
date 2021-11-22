@@ -144,9 +144,23 @@ int main(int argc, char** argv)
         "BFD-ExtendedSum",
 
         //"FFD-L2Norm", "FFD-DotProduct", "FFD-Fitness",
+        "WFD-Avg",
+        "WFD-Max",
+        "WFD-CPU",
+        "WFD-AvgExpo", "WFD-Surrogate",
+        "WFD-ExtendedSum",
         //"NodeCount",
     };
 
+    vector<string> list_spread = {
+        "SpreadWF-Avg",
+        "SpreadWF-Max",
+        "SpreadWF-AvgExpo",
+        "SpreadWF-Surrogate",
+        "SpreadWF-ExtendedSum",
+    };
+
+    int best = FF_bins;
     for (string & algo_name : list_algos)
     {
         AlgoFit2D * algo = createAlgo2D(algo_name, instance);
@@ -155,15 +169,26 @@ int main(int argc, char** argv)
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start);
         cout << algo_name << ": " << sol << " in " << to_string((float)duration.count() / 1000) << endl;
+
+        if (sol < best)
+        {
+            best = sol;
+        }
     }
 
-
-    Algo2DSpreadWF * algo = new Algo2DSpreadWF(instance);
-    auto start = high_resolution_clock::now();
-    int sol = algo->solveInstanceSpread(LB, FF_bins);
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(stop - start);
-    cout << "WF: " << sol << " in " << to_string((float)duration.count() / 1000) << endl;
+    for (string & algo_name : list_spread)
+    {
+        Algo2DSpreadWFAvg * algo = createSpreadAlgo(algo_name, instance);
+        auto start = high_resolution_clock::now();
+        int sol = algo->solveInstanceSpread(LB, best);
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(stop - start);
+        cout << algo_name << ": " << sol << " in " << to_string((float)duration.count() / 1000) << endl;
+        if ((sol < best) and (sol != -1))
+        {
+            best = sol;
+        }
+    }
 
 
     /*if (argc > 3)
