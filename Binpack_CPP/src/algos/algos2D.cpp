@@ -108,6 +108,19 @@ AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance
     {
         return new Algo2DBinFFDFitness(instance);
     }
+    else if (algo_name == "NCD-DotDivision")
+    {
+        return new Algo2DBinFFDDotDivision(instance);
+    }
+    else if (algo_name == "NCD-FitnessDiv")
+    {
+        return new Algo2DBinFFDFitnessDiv(instance);
+    }
+    else
+    {
+        return nullptr; // This should never happen
+    }
+}
 
 Algo2DSpreadWFAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance)
 {
@@ -1044,16 +1057,42 @@ void Algo2DBinFFDFitness::computeMeasures(AppList2D::iterator start_list, AppLis
     }
 }
 
+/********* Bin Centric FFD Fitness Division ***************/
+Algo2DBinFFDFitnessDiv::Algo2DBinFFDFitnessDiv(const Instance2D &instance):
+    Algo2DBinFFDFitness(instance)
+{ }
+
+void Algo2DBinFFDFitnessDiv::computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D *bin)
+{
     for(auto it = start_list; it != end_list; ++it)
     {
         Application2D * app = *it;
-        float a = (app->getNormalizedCPU() * bin->getAvailableCPUCap()) / (sum_cpu * sum_res_cpu * bin->getMaxCPUCap());
-        float b = (app->getNormalizedMemory() * bin->getAvailableMemCap()) / (sum_mem * sum_res_mem * bin->getMaxMemCap());
+        float a = (app->getNormalizedCPU() * total_residual_cpu) / (norm_sum_cpu * bin->getAvailableCPUCap());
+        float b = (app->getNormalizedMemory() * total_residual_mem) / (norm_sum_mem * bin->getAvailableMemCap());
 
         app->setMeasure(a+b);
     }
 }
 
+
+
+
+/********* Bin Centric FFD DotDivision ***************/
+Algo2DBinFFDDotDivision::Algo2DBinFFDDotDivision(const Instance2D &instance):
+    Algo2DBinFFDDotProduct(instance)
+{ }
+
+void Algo2DBinFFDDotDivision::computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D *bin)
+{
+    for(auto it = start_list; it != end_list; ++it)
+    {
+        Application2D * app = *it;
+        // Use normalized values of app size and bin residual capacity
+        float measure = (app->getNormalizedCPU() * bin->getMaxCPUCap()) / bin->getAvailableCPUCap();
+        measure += (app->getNormalizedMemory() * bin->getMaxMemCap()) / bin->getAvailableMemCap();
+        app->setMeasure(measure);
+    }
+}
 
 
 /* ================================================ */

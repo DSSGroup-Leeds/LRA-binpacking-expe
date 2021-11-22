@@ -356,10 +356,26 @@ protected:
 };
 
 
+/********* Bin Centric FFD Fitness Division ***************/
+class Algo2DBinFFDFitnessDiv : public Algo2DBinFFDFitness
+{
+public:
+    Algo2DBinFFDFitnessDiv(const Instance2D &instance);
+
 protected:
     virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
 };
 
+
+/********* Bin Centric FFD DotDivision ***************/
+class Algo2DBinFFDDotDivision : public Algo2DBinFFDDotProduct
+{
+public:
+    Algo2DBinFFDDotDivision(const Instance2D &instance);
+
+protected:
+    virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
+};
 
 
 /* ================================================ */
