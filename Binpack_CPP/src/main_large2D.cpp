@@ -11,15 +11,19 @@ using namespace std;
 using namespace std::chrono;
 
 
-std::string run_for_instance(const Instance2D & instance, const vector<string> & list_algos)
+std::string run_for_instance(const Instance2D & instance,
+                             const vector<string> & list_algos,
+                             const vector<string> & list_spread)
 {
     int LB_cpu = BPP2D_LBcpu(instance);
     int LB_mem = BPP2D_LBmem(instance);
     int LB = std::max(LB_cpu, LB_mem);
 
     int hint_bin = LB + 500;
+    int best_sol = instance.getTotalReplicas();
 
-    string row(to_string(LB) + "\t");
+    string row(to_string(LB));
+    string row_res;
     string row_time;
 
     int sol;
@@ -33,7 +37,12 @@ std::string run_for_instance(const Instance2D & instance, const vector<string> &
             auto stop = high_resolution_clock::now();
             auto duration = duration_cast<milliseconds>(stop - start);
 
-            row.append("\t" + to_string(sol));
+            if (sol < best_sol)
+            {
+                best_sol = sol;
+            }
+
+            row_res.append("\t" + to_string(sol));
             row_time.append("\t" + to_string((float)duration.count() / 1000));
 
             delete algo;
@@ -44,12 +53,43 @@ std::string run_for_instance(const Instance2D & instance, const vector<string> &
         }
     }
 
-    row.append(row_time);
-    return row;
+    row.append("\t"+to_string(best_sol));
+
+    for (const string & algo_name : list_spread)
+    {
+        Algo2DSpreadWFAvg * algo = createSpreadAlgo(algo_name, instance);
+        if (algo != nullptr)
+        {
+            auto start = high_resolution_clock::now();
+            sol = algo->solveInstanceSpread(LB, best_sol);
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<milliseconds>(stop - start);
+
+            if ((sol < best_sol) and (sol != -1))
+            {
+                best_sol = sol;
+            }
+
+            row_res.append("\t" + to_string(sol));
+            row_time.append("\t" + to_string((float)duration.count() / 1000));
+
+            delete algo;
+        }
+        else
+        {
+            cout << "Unknown algo name: " << algo_name << endl;
+        }
+    }
+
+    row.append("\t"+to_string(best_sol));
+    return row + row_res + row_time;
 }
 
 
-int run_list_algos(string input_path, string& outfile, vector<string>& list_algos, int bin_cpu_capacity, int bin_mem_capacity)
+int run_list_algos(string input_path, string& outfile,
+                   vector<string>& list_algos, vector<string>& list_spread,
+                   int bin_cpu_capacity, int bin_mem_capacity,
+                   int ssize, vector<string> &graph_classes)
 {
     ofstream f(outfile, ios_base::trunc);
     if (!f.is_open())
@@ -60,7 +100,7 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
     cout << "Writing output to file " << outfile << endl;
 
     // Header line
-    string header("instance_name\tLB");
+    string header("instance_name\tLB\tbest_sol\tbest_spread");
     string time_header;
 
     for (std::string algo_name : list_algos)
@@ -68,11 +108,17 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
         header.append("\t" + algo_name);
         time_header.append("\t" + algo_name + "_time");
     }
+    for (std::string algo_name : list_spread)
+    {
+        header.append("\t" + algo_name);
+        time_header.append("\t" + algo_name + "_time");
+    }
     f << header << time_header << "\n";
 
     vector<string> densities = { "005"};
-    vector<int> sizes = { 10000, 50000, 100000 };
-    vector<string> graph_classes = { "arbitrary", "normal", "threshold" };
+    vector<int> sizes;// = { 10000, 50000, 100000 };
+    sizes.push_back(ssize);
+    //vector<string> graph_classes = { "arbitrary", "normal", "threshold" };
 
     for (string& d : densities)
     {
@@ -84,14 +130,16 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
                 cout << "Graph class: " << graph_class << endl;
                 for (int n = 0; n < 10; ++n)
                 {
+                    cout << to_string(n) << " ";
                     string instance_name("large_scale_" + to_string(s) + "_" + graph_class + "_d" + d + "_" + to_string(n));
                     string infile(input_path + instance_name + ".csv");
                     const Instance2D instance(instance_name, bin_cpu_capacity, bin_mem_capacity, infile);
 
-                    string row_str = run_for_instance(instance, list_algos);
+                    string row_str = run_for_instance(instance, list_algos, list_spread);
                     f << instance_name << "\t" << row_str << "\n";
                     f.flush();
                 }
+                cout << endl;
             }
         }
     }
@@ -103,42 +151,80 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
 
 int main(int argc, char** argv)
 {
-    string data_path;
+    string input_path = "/nobackup/scscm/TClab_data/large_2D/";
+    string output_path = "/nobackup/scscm/output/";
 
     int bin_cpu_capacity;
     int bin_mem_capacity;
+    int ssize;
+    string graph;
     if (argc > 3)
     {
         bin_cpu_capacity = stoi(argv[1]);
         bin_mem_capacity = stoi(argv[2]);
-        data_path = argv[3];
+        ssize = stoi(argv[3]);
+
+        if (argc > 4)
+        {
+            graph = argv[4];
+        }
     }
     else
     {
-        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <data_path>" << endl;
+        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <size> (<graph_class>)" << endl;
         return -1;
     }
 
-    string input_path(data_path+"/input/");
-    string output_path(data_path+"/results/");
+    //string input_path(data_path+"/input/");
+    //string output_path(data_path+"/results/");
 
-    string outfile(output_path + "large2D_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + ".csv");
 
     vector<string> list_algos = {
-        "FF", "FFD-Degree",
+        "FF",
+        //"FFD-Degree",
 
-        "FFD-Avg", "FFD-Max",
-        "FFD-AvgExpo", "FFD-Surrogate",
-        "FFD-ExtendedSum",
+        //"FFD-Avg", "FFD-Max",
+        "FFD-CPU",
+        //"FFD-AvgExpo", "FFD-Surrogate",
+        //"FFD-ExtendedSum",
 
-        "BFD-Avg", "BFD-Max",
+        //"BFD-Avg", "BFD-Max",
+        "BFD-CPU",
         "BFD-AvgExpo", "BFD-Surrogate",
         "BFD-ExtendedSum",
 
-        "FFD-DotProduct", "FFD-Fitness",
+        "WFD-Avg", "WFD-Max",
+        "WFD-CPU",
+        "WFD-AvgExpo", "WFD-Surrogate",
+        "WFD-ExtendedSum",
+
+        "NCD-L2Norm",
+        "NCD-DotProduct", "NCD-Fitness",
+        "NCD-DotDivision", "NCD-FitnessDiv"
+        //"NodeCount",
     };
 
-    run_list_algos(input_path, outfile, list_algos, bin_cpu_capacity, bin_mem_capacity);
+    vector<string> list_spread = {
+        "SpreadWF-Avg",
+        "SpreadWF-Max",
+        "SpreadWF-AvgExpo",
+        "SpreadWF-Surrogate",
+        "SpreadWF-ExtendedSum",
+    };
+
+    vector<string> graph_classes = { "arbitrary", "normal", "threshold" };
+    string outfile(output_path + "large2D_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(ssize) + "_d005.csv");
+
+    if (argc > 4) // Override graph class with a single one
+    {
+        outfile = output_path + "large2D_" + graph + "_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(ssize) + "_d005.csv";
+        graph_classes.clear();
+        graph_classes.push_back(graph);
+    }
+
+    run_list_algos(input_path, outfile, list_algos, list_spread,
+                   bin_cpu_capacity, bin_mem_capacity,
+                   ssize, graph_classes);
 
     std::cout << "Run successful!" << std::endl;
     return 0;
