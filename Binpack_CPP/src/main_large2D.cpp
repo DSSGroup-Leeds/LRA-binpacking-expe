@@ -57,7 +57,7 @@ std::string run_for_instance(const Instance2D & instance,
 
     for (const string & algo_name : list_spread)
     {
-        Algo2DSpreadWFAvg * algo = createSpreadAlgo(algo_name, instance);
+        Algo2DSpreadWFDAvg * algo = createSpreadAlgo(algo_name, instance);
         if (algo != nullptr)
         {
             auto start = high_resolution_clock::now();
@@ -205,11 +205,11 @@ int main(int argc, char** argv)
     };
 
     vector<string> list_spread = {
-        "SpreadWF-Avg",
-        "SpreadWF-Max",
-        "SpreadWF-AvgExpo",
-        "SpreadWF-Surrogate",
-        "SpreadWF-ExtendedSum",
+        "SpreadWFD-Avg",
+        "SpreadWFD-Max",
+        "SpreadWFD-AvgExpo",
+        "SpreadWFD-Surrogate",
+        "SpreadWFD-ExtendedSum",
     };
 
     vector<string> graph_classes = { "arbitrary", "normal", "threshold" };

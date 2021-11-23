@@ -382,10 +382,10 @@ protected:
 /* ================================================ */
 /* ================================================ */
 /*********** Spread replicas Worst Fit Avg **********/
-class Algo2DSpreadWFAvg : public AlgoFit2D
+class Algo2DSpreadWFDAvg : public AlgoFit2D
 {
 public:
-    Algo2DSpreadWFAvg(const Instance2D &instance);
+    Algo2DSpreadWFDAvg(const Instance2D &instance);
 
     int solveInstanceSpread(int LB_bins, int UB_bins);
 private:
@@ -404,10 +404,10 @@ private:
 };
 
 /*********** Spread replicas Worst Fit Max **********/
-class Algo2DSpreadWFMax : public Algo2DSpreadWFAvg
+class Algo2DSpreadWFDMax : public Algo2DSpreadWFDAvg
 {
 public:
-    Algo2DSpreadWFMax(const Instance2D &instance);
+    Algo2DSpreadWFDMax(const Instance2D &instance);
 
 private:
     virtual void updateBinMeasure(Bin2D* bin);
@@ -416,10 +416,10 @@ private:
 
 
 /*********** Spread replicas Worst Fit AvgExpo **********/
-class Algo2DSpreadWFAvgExpo : public Algo2DSpreadWFAvg
+class Algo2DSpreadWFDAvgExpo : public Algo2DSpreadWFDAvg
 {
 public:
-    Algo2DSpreadWFAvgExpo(const Instance2D &instance);
+    Algo2DSpreadWFDAvgExpo(const Instance2D &instance);
 
 private:
     virtual void createBins(int nb_bins);
@@ -434,10 +434,10 @@ protected:
 };
 
 /*********** Spread replicas Worst Fit Surrogate **********/
-class Algo2DSpreadWFSurrogate : public Algo2DSpreadWFAvgExpo
+class Algo2DSpreadWFDSurrogate : public Algo2DSpreadWFDAvgExpo
 {
 public:
-    Algo2DSpreadWFSurrogate(const Instance2D &instance);
+    Algo2DSpreadWFDSurrogate(const Instance2D &instance);
 
 private:
     virtual void updateBinMeasure(Bin2D* bin);
@@ -447,10 +447,10 @@ private:
 
 
 /*********** Spread replicas Worst Fit Extended Sum **********/
-class Algo2DSpreadWFExtendedSum : public Algo2DSpreadWFAvgExpo
+class Algo2DSpreadWFDExtendedSum : public Algo2DSpreadWFDAvgExpo
 {
 public:
-    Algo2DSpreadWFExtendedSum(const Instance2D &instance);
+    Algo2DSpreadWFDExtendedSum(const Instance2D &instance);
 
 private:
     virtual void updateBinMeasure(Bin2D* bin);
@@ -458,6 +458,6 @@ private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
 
-Algo2DSpreadWFAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance);
+Algo2DSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance);
 
 #endif // ALGOS2D_HPP

@@ -122,27 +122,27 @@ AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance
     }
 }
 
-Algo2DSpreadWFAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance)
+Algo2DSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance)
 {
-    if (algo_name == "SpreadWF-Avg")
+    if (algo_name == "SpreadWFD-Avg")
     {
-        return new Algo2DSpreadWFAvg(instance);
+        return new Algo2DSpreadWFDAvg(instance);
     }
-    else if (algo_name == "SpreadWF-Max")
+    else if (algo_name == "SpreadWFD-Max")
     {
-        return new Algo2DSpreadWFMax(instance);
+        return new Algo2DSpreadWFDMax(instance);
     }
-    else if (algo_name == "SpreadWF-AvgExpo")
+    else if (algo_name == "SpreadWFD-AvgExpo")
     {
-        return new Algo2DSpreadWFAvgExpo(instance);
+        return new Algo2DSpreadWFDAvgExpo(instance);
     }
-    else if (algo_name == "SpreadWF-Surrogate")
+    else if (algo_name == "SpreadWFD-Surrogate")
     {
-        return new Algo2DSpreadWFSurrogate(instance);
+        return new Algo2DSpreadWFDSurrogate(instance);
     }
-    else if (algo_name == "SpreadWF-ExtendedSum")
+    else if (algo_name == "SpreadWFD-ExtendedSum")
     {
-        return new Algo2DSpreadWFExtendedSum(instance);
+        return new Algo2DSpreadWFDExtendedSum(instance);
     }
     else
     {
@@ -932,7 +932,7 @@ void Algo2DBinFFDDotProduct::allocateBatch(AppList2D::iterator first_app, AppLis
 
     // While there are still applications to pack
     auto next_treated_app_it = first_app;
-    auto end_list = end_batch;
+    auto end_list = end_batch; // TODO probably don't need it, simply replace by end_batch
     while(next_treated_app_it != end_list)
     {
         // Open a new bin
@@ -1099,16 +1099,16 @@ void Algo2DBinFFDDotDivision::computeMeasures(AppList2D::iterator start_list, Ap
 /* ================================================ */
 /* ================================================ */
 /*********** Spread replicas Worst Fit Avg **********/
-Algo2DSpreadWFAvg::Algo2DSpreadWFAvg(const Instance2D &instance):
+Algo2DSpreadWFDAvg::Algo2DSpreadWFDAvg(const Instance2D &instance):
     AlgoFit2D(instance)
 { }
 
-int Algo2DSpreadWFAvg::solveInstanceSpread(int LB_bins, int UB_bins)
+int Algo2DSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
 {
     // First, try to find a solution with UB_bins
     if (!trySolve(UB_bins))
     {
-        //std::cout << "SpreadWF cannot improve on the solution of UB given" << std::endl;
+        //std::cout << "SpreadWFD cannot improve on the solution of UB given" << std::endl;
         return -1;
     }
 
@@ -1155,7 +1155,7 @@ int Algo2DSpreadWFAvg::solveInstanceSpread(int LB_bins, int UB_bins)
     return best_sol;
 }
 
-bool Algo2DSpreadWFAvg::trySolve(int nb_bins)
+bool Algo2DSpreadWFDAvg::trySolve(int nb_bins)
 {
     createBins(nb_bins);
 
@@ -1209,7 +1209,7 @@ bool Algo2DSpreadWFAvg::trySolve(int nb_bins)
     return true;
 }
 
-void Algo2DSpreadWFAvg::createBins(int nb_bins)
+void Algo2DSpreadWFDAvg::createBins(int nb_bins)
 {
     bins.reserve(nb_bins);
     for (int i = 0; i < nb_bins; ++i)
@@ -1221,37 +1221,37 @@ void Algo2DSpreadWFAvg::createBins(int nb_bins)
 }
 
 
-void Algo2DSpreadWFAvg::updateBinMeasure(Bin2D* bin)
+void Algo2DSpreadWFDAvg::updateBinMeasure(Bin2D* bin)
 {
     float measure = (bin->getAvailableCPUCap() / bin->getMaxCPUCap()) + (bin->getAvailableMemCap() / bin->getMaxMemCap());
     bin->setMeasure(measure);
 }
 
-void Algo2DSpreadWFAvg::updateBinMeasures(){ }
+void Algo2DSpreadWFDAvg::updateBinMeasures(){ }
 
 
-void Algo2DSpreadWFAvg::allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch)
+void Algo2DSpreadWFDAvg::allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch)
 {
     std::cout << "For Spread algorithm please call 'solveInstanceSpread' instead" << std::endl;
     return;
 }
 
-void Algo2DSpreadWFAvg::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+void Algo2DSpreadWFDAvg::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
 {
     stable_sort(first_app, end_it, application2D_comparator_avg_size_decreasing);
 }
 
-void Algo2DSpreadWFAvg::sortBins()
+void Algo2DSpreadWFDAvg::sortBins()
 {
     stable_sort(bins.begin(), bins.end(), bin2D_comparator_measure_decreasing);
 }
 
-bool Algo2DSpreadWFAvg::checkItemToBin(Application2D* app, Bin2D* bin) const
+bool Algo2DSpreadWFDAvg::checkItemToBin(Application2D* app, Bin2D* bin) const
 {
     return (bin->doesItemFit(app->getCPUSize(), app->getMemorySize())) and (bin->isAffinityCompliant(app));
 }
 
-void Algo2DSpreadWFAvg::addItemToBin(Application2D* app, int replica_id, Bin2D* bin)
+void Algo2DSpreadWFDAvg::addItemToBin(Application2D* app, int replica_id, Bin2D* bin)
 {
     bin->addNewConflict(app);
     bin->addItem(app, replica_id);
@@ -1260,17 +1260,17 @@ void Algo2DSpreadWFAvg::addItemToBin(Application2D* app, int replica_id, Bin2D* 
 
 
 /*********** Spread replicas Worst Fit Max **********/
-Algo2DSpreadWFMax::Algo2DSpreadWFMax(const Instance2D &instance):
-    Algo2DSpreadWFAvg(instance)
+Algo2DSpreadWFDMax::Algo2DSpreadWFDMax(const Instance2D &instance):
+    Algo2DSpreadWFDAvg(instance)
 { }
 
-void Algo2DSpreadWFMax::updateBinMeasure(Bin2D* bin)
+void Algo2DSpreadWFDMax::updateBinMeasure(Bin2D* bin)
 {
     float measure = std::max(bin->getAvailableCPUCap() / bin->getMaxCPUCap(), bin->getAvailableMemCap() / bin->getMaxMemCap());
     bin->setMeasure(measure);
 }
 
-void Algo2DSpreadWFMax::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+void Algo2DSpreadWFDMax::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
 {
     stable_sort(first_app, end_it, application2D_comparator_max_size_decreasing);
 }
@@ -1278,18 +1278,18 @@ void Algo2DSpreadWFMax::sortApps(AppList2D::iterator first_app, AppList2D::itera
 
 
 /*********** Spread replicas Worst Fit AvgExpo **********/
-Algo2DSpreadWFAvgExpo::Algo2DSpreadWFAvgExpo(const Instance2D &instance):
-    Algo2DSpreadWFAvg(instance),
+Algo2DSpreadWFDAvgExpo::Algo2DSpreadWFDAvgExpo(const Instance2D &instance):
+    Algo2DSpreadWFDAvg(instance),
     total_residual_cpu(0),
     total_residual_mem(0)
 { }
 
-void Algo2DSpreadWFAvgExpo::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+void Algo2DSpreadWFDAvgExpo::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
 {
     stable_sort(first_app, end_it, application2D_comparator_avgexpo_size_decreasing);
 }
 
-void Algo2DSpreadWFAvgExpo::createBins(int nb_bins)
+void Algo2DSpreadWFDAvgExpo::createBins(int nb_bins)
 {
     bins.reserve(nb_bins);
     for (int i = 0; i < nb_bins; ++i)
@@ -1302,7 +1302,7 @@ void Algo2DSpreadWFAvgExpo::createBins(int nb_bins)
     total_residual_mem = nb_bins * bin_mem_capacity;
 }
 
-void Algo2DSpreadWFAvgExpo::addItemToBin(Application2D* app, int replica_id, Bin2D* bin)
+void Algo2DSpreadWFDAvgExpo::addItemToBin(Application2D* app, int replica_id, Bin2D* bin)
 {
     bin->addNewConflict(app);
     bin->addItem(app, replica_id);
@@ -1311,9 +1311,9 @@ void Algo2DSpreadWFAvgExpo::addItemToBin(Application2D* app, int replica_id, Bin
     total_residual_mem -= app->getMemorySize();
 }
 
-void Algo2DSpreadWFAvgExpo::updateBinMeasure(Bin2D* bin) { }
+void Algo2DSpreadWFDAvgExpo::updateBinMeasure(Bin2D* bin) { }
 
-void Algo2DSpreadWFAvgExpo::updateBinMeasures()
+void Algo2DSpreadWFDAvgExpo::updateBinMeasures()
 {
     // measure = exp(0.01* (sum residual capacity all bins)/(nb bin * bin capacity) * normalised residual cpu + same with memory
     float factor_cpu = (std::exp(0.01 * total_residual_cpu / (bin_cpu_capacity * bins.size()))) / bin_cpu_capacity;
@@ -1330,18 +1330,18 @@ void Algo2DSpreadWFAvgExpo::updateBinMeasures()
 
 
 /*********** Spread replicas Worst Fit Surrogate **********/
-Algo2DSpreadWFSurrogate::Algo2DSpreadWFSurrogate(const Instance2D &instance):
-    Algo2DSpreadWFAvgExpo(instance)
+Algo2DSpreadWFDSurrogate::Algo2DSpreadWFDSurrogate(const Instance2D &instance):
+    Algo2DSpreadWFDAvgExpo(instance)
 { }
 
-void Algo2DSpreadWFSurrogate::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+void Algo2DSpreadWFDSurrogate::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
 {
     stable_sort(first_app, end_it, application2D_comparator_max_size_decreasing);
 }
 
-void Algo2DSpreadWFSurrogate::updateBinMeasure(Bin2D* bin) { }
+void Algo2DSpreadWFDSurrogate::updateBinMeasure(Bin2D* bin) { }
 
-void Algo2DSpreadWFSurrogate::updateBinMeasures()
+void Algo2DSpreadWFDSurrogate::updateBinMeasures()
 {
     // measure = lambda norm residual cpu + (1-lambda) * norm residual mem
     float lambda = ((float)total_residual_cpu) / (total_residual_cpu + total_residual_mem);
@@ -1356,18 +1356,18 @@ void Algo2DSpreadWFSurrogate::updateBinMeasures()
 
 
 /*********** Spread replicas Worst Fit Extended Sum **********/
-Algo2DSpreadWFExtendedSum::Algo2DSpreadWFExtendedSum(const Instance2D &instance):
-    Algo2DSpreadWFAvgExpo(instance)
+Algo2DSpreadWFDExtendedSum::Algo2DSpreadWFDExtendedSum(const Instance2D &instance):
+    Algo2DSpreadWFDAvgExpo(instance)
 { }
 
-void Algo2DSpreadWFExtendedSum::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
+void Algo2DSpreadWFDExtendedSum::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
 {
     stable_sort(first_app, end_it, application2D_comparator_max_size_decreasing);
 }
 
-void Algo2DSpreadWFExtendedSum::updateBinMeasure(Bin2D* bin) { }
+void Algo2DSpreadWFDExtendedSum::updateBinMeasure(Bin2D* bin) { }
 
-void Algo2DSpreadWFExtendedSum::updateBinMeasures()
+void Algo2DSpreadWFDExtendedSum::updateBinMeasures()
 {
     // measure = residual cpu / total residual cpu + residual mem / total residual mem
     // (no need to use normalised values here)
