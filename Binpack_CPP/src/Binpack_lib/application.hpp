@@ -85,6 +85,7 @@ protected:
 Application2D* getApp2D(const AppList2D& list, const std::string& app_id);
 
 bool application2D_comparator_total_degree_decreasing(Application2D* appa, Application2D* appb);
+bool application2D_comparator_CPU_decreasing(Application2D* appa, Application2D* appb);
 
 bool application2D_comparator_max_size_decreasing(Application2D* appa, Application2D* appb);
 bool application2D_comparator_avg_size_decreasing(Application2D* appa, Application2D* appb);

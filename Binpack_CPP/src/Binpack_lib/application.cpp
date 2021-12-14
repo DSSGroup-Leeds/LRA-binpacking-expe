@@ -197,6 +197,11 @@ bool application2D_comparator_total_degree_decreasing(Application2D* appa, Appli
     return (appa->getTotalDegree() > appb->getTotalDegree());
 }
 
+bool application2D_comparator_CPU_decreasing(Application2D* appa, Application2D* appb)
+{
+    return (appa->getCPUSize() > appb->getCPUSize());
+}
+
 bool application2D_comparator_max_size_decreasing(Application2D* appa, Application2D* appb)
 {
     return (appa->getMaxSize() > appb->getMaxSize());
