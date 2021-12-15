@@ -24,10 +24,6 @@ AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance
     {
         return new Algo2DFFDMax(instance);
     }
-    else if (algo_name == "FFD-CPU")
-    {
-        return new Algo2DFFDCPU(instance);
-    }
     else if (algo_name == "FFD-AvgExpo")
     {
         return new Algo2DFFDAvgExpo(instance);
@@ -49,10 +45,6 @@ AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance
     {
         return new Algo2DBFDMax(instance);
     }
-    else if (algo_name == "BFD-CPU")
-    {
-        return new Algo2DBFDCPU(instance);
-    }
     else if(algo_name == "BFD-AvgExpo")
     {
         return new Algo2DBFDAvgExpo(instance);
@@ -73,10 +65,6 @@ AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance
     else if(algo_name == "WFD-Max")
     {
         return new Algo2DWFDMax(instance);
-    }
-    else if (algo_name == "WFD-CPU")
-    {
-        return new Algo2DWFDCPU(instance);
     }
     else if(algo_name == "WFD-AvgExpo")
     {
@@ -100,6 +88,10 @@ AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance
     {
         return new Algo2DBinFFDDotProduct(instance);
     }
+    else if (algo_name == "NCD-DotDivision")
+    {
+        return new Algo2DBinFFDDotDivision(instance);
+    }
     else if (algo_name == "NCD-L2Norm")
     {
         return new Algo2DBinFFDL2Norm(instance);
@@ -107,14 +99,6 @@ AlgoFit2D* createAlgo2D(const std::string &algo_name, const Instance2D &instance
     else if (algo_name == "NCD-Fitness")
     {
         return new Algo2DBinFFDFitness(instance);
-    }
-    else if (algo_name == "NCD-DotDivision")
-    {
-        return new Algo2DBinFFDDotDivision(instance);
-    }
-    else if (algo_name == "NCD-FitnessDiv")
-    {
-        return new Algo2DBinFFDFitnessDiv(instance);
     }
     else
     {
@@ -390,17 +374,6 @@ void Algo2DFFDDegree::sortApps(AppList2D::iterator first_app, AppList2D::iterato
 }
 
 
-/************ First Fit Decreasing CPU Affinity *********/
-Algo2DFFDCPU::Algo2DFFDCPU(const Instance2D &instance):
-    Algo2DFF(instance)
-{ }
-
-void Algo2DFFDCPU::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
-{
-    stable_sort(first_app, end_it, application2D_comparator_CPU_decreasing);
-}
-
-
 
 /************ First Fit Decreasing Average Affinity *********/
 Algo2DFFDAvg::Algo2DFFDAvg(const Instance2D &instance):
@@ -476,8 +449,7 @@ void Algo2DBFDAvg::sortBins() {
     // The measure of the bins should have been updated before
     // Only need to sort the bins from current onward
     // Bins before curr_bin_index cannot accomodate replicas of the current application
-    auto start_bin = bins.begin() + curr_bin_index;
-    bubble_bin_up(start_bin, bins.end(), bin2D_comparator_measure_increasing);
+    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
 }
 
 bool Algo2DBFDAvg::checkItemToBin(Application2D* app, Bin2D* bin) const
@@ -517,23 +489,6 @@ void Algo2DBFDMax::updateBinMeasure(Bin2D *bin)
     float measure = std::max((bin->getAvailableCPUCap() / bin->getMaxCPUCap()), (bin->getAvailableMemCap() / bin->getMaxMemCap()));
     bin->setMeasure(measure);
 }
-
-
-/************ Best Fit Decreasing CPU Affinity *********/
-Algo2DBFDCPU::Algo2DBFDCPU(const Instance2D &instance):
-    Algo2DBFDAvg(instance)
-{ }
-
-void Algo2DBFDCPU::sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it)
-{
-    stable_sort(first_app, end_it, application2D_comparator_CPU_decreasing);
-}
-
-void Algo2DBFDCPU::updateBinMeasure(Bin2D *bin)
-{
-    bin->setMeasure(bin->getAvailableCPUCap());
-}
-
 
 
 /************ Best Average with Exponential Weights Affinity *********/
@@ -664,17 +619,8 @@ Algo2DWFDMax::Algo2DWFDMax(const Instance2D &instance):
 { }
 
 void Algo2DWFDMax::sortBins() {
-    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
-}
-
-
-/************ Worst Fit Decreasing CPU Affinity *********/
-Algo2DWFDCPU::Algo2DWFDCPU(const Instance2D &instance):
-    Algo2DBFDCPU(instance)
-{ }
-
-void Algo2DWFDCPU::sortBins() {
-    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+    //bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+    stable_sort(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
 }
 
 
@@ -684,7 +630,7 @@ Algo2DWFDAvgExpo::Algo2DWFDAvgExpo(const Instance2D &instance):
 { }
 
 void Algo2DWFDAvgExpo::sortBins() {
-    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+    stable_sort(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
 }
 
 
@@ -694,7 +640,7 @@ Algo2DWFDSurrogate::Algo2DWFDSurrogate(const Instance2D &instance):
 { }
 
 void Algo2DWFDSurrogate::sortBins() {
-    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+    stable_sort(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
 }
 
 
@@ -704,7 +650,7 @@ Algo2DWFDExtendedSum::Algo2DWFDExtendedSum(const Instance2D &instance):
 { }
 
 void Algo2DWFDExtendedSum::sortBins() {
-    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+    stable_sort(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
 }
 
 
@@ -996,6 +942,24 @@ void Algo2DBinFFDDotProduct::allocateBatch(AppList2D::iterator first_app, AppLis
 
 
 
+/********* Bin Centric FFD DotDivision ***************/
+Algo2DBinFFDDotDivision::Algo2DBinFFDDotDivision(const Instance2D &instance):
+    Algo2DBinFFDDotProduct(instance)
+{ }
+
+void Algo2DBinFFDDotDivision::computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D *bin)
+{
+    for(auto it = start_list; it != end_list; ++it)
+    {
+        Application2D * app = *it;
+        // Use normalized values of app size and bin residual capacity
+        float measure = (app->getNormalizedCPU() * bin->getMaxCPUCap()) / bin->getAvailableCPUCap();
+        measure += (app->getNormalizedMemory() * bin->getMaxMemCap()) / bin->getAvailableMemCap();
+        app->setMeasure(measure);
+    }
+}
+
+
 /********* Bin Centric FFD L2Norm ***************/
 Algo2DBinFFDL2Norm::Algo2DBinFFDL2Norm(const Instance2D &instance):
     Algo2DBinFFDDotProduct(instance)
@@ -1057,42 +1021,6 @@ void Algo2DBinFFDFitness::computeMeasures(AppList2D::iterator start_list, AppLis
     }
 }
 
-/********* Bin Centric FFD Fitness Division ***************/
-Algo2DBinFFDFitnessDiv::Algo2DBinFFDFitnessDiv(const Instance2D &instance):
-    Algo2DBinFFDFitness(instance)
-{ }
-
-void Algo2DBinFFDFitnessDiv::computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D *bin)
-{
-    for(auto it = start_list; it != end_list; ++it)
-    {
-        Application2D * app = *it;
-        float a = (app->getNormalizedCPU() * total_residual_cpu) / (norm_sum_cpu * bin->getAvailableCPUCap());
-        float b = (app->getNormalizedMemory() * total_residual_mem) / (norm_sum_mem * bin->getAvailableMemCap());
-
-        app->setMeasure(a+b);
-    }
-}
-
-
-
-
-/********* Bin Centric FFD DotDivision ***************/
-Algo2DBinFFDDotDivision::Algo2DBinFFDDotDivision(const Instance2D &instance):
-    Algo2DBinFFDDotProduct(instance)
-{ }
-
-void Algo2DBinFFDDotDivision::computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D *bin)
-{
-    for(auto it = start_list; it != end_list; ++it)
-    {
-        Application2D * app = *it;
-        // Use normalized values of app size and bin residual capacity
-        float measure = (app->getNormalizedCPU() * bin->getMaxCPUCap()) / bin->getAvailableCPUCap();
-        measure += (app->getNormalizedMemory() * bin->getMaxMemCap()) / bin->getAvailableMemCap();
-        app->setMeasure(measure);
-    }
-}
 
 
 /* ================================================ */
@@ -1108,8 +1036,16 @@ int Algo2DSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
     // First, try to find a solution with UB_bins
     if (!trySolve(UB_bins))
     {
-        //std::cout << "SpreadWFD cannot improve on the solution of UB given" << std::endl;
-        return -1;
+        // If no solution found, refine values of LB and increase UB
+        bool sol_found = false;
+        while (!sol_found)
+        {
+            LB_bins = UB_bins+1; // No solution was found, UB+1 is a new lower bound
+            UB_bins += 51; // +1 to be in par with the +1 of LB
+
+            sol_found = trySolve(UB_bins);
+            i++;
+        }
     }
 
     // Store the current solution
@@ -1127,7 +1063,6 @@ int Algo2DSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
         target_bins = (low_bound + best_sol)/2;
         //std::cout << "Trying with " << target_bins << " bins (LB: " << low_bound  << " UB: " << best_sol<< ")" << std::endl;
 
-        clearSolution();
         if (trySolve(target_bins))
         {
 
@@ -1157,6 +1092,7 @@ int Algo2DSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
 
 bool Algo2DSpreadWFDAvg::trySolve(int nb_bins)
 {
+    clearSolution();
     createBins(nb_bins);
 
     // For each app in the list, try to put all replicas in separate bins

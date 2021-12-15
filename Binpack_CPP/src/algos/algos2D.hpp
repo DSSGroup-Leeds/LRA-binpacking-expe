@@ -33,7 +33,7 @@ private:
     virtual void createNewBin(); // Open a new empty bin
     virtual void allocateBatch(AppList2D::iterator first_app, AppList2D::iterator end_batch);
 
-    // These are the 4 methods each variant of the Fit algo should implement
+    // These are the methods each variant of the Fit algo should implement
     virtual void sortBins() = 0;
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it) = 0;
     virtual bool checkItemToBin(Application2D* app, Bin2D* bin) const = 0;
@@ -83,17 +83,6 @@ private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
 
-/************ First Fit Decreasing CPU Affinity *********/
-class Algo2DFFDCPU : public Algo2DFF
-{
-public:
-    Algo2DFFDCPU(const Instance2D &instance);
-private:
-    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
-};
-
-
-
 /************ First Fit Decreasing Average Affinity *********/
 class Algo2DFFDAvg : public Algo2DFF
 {
@@ -102,7 +91,6 @@ public:
 private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
-
 
 /************ First Fit Decreasing Average with Exponential Weights Affinity *********/
 class Algo2DFFDAvgExpo : public Algo2DFF
@@ -113,7 +101,6 @@ private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
 
-
 /************ First Fit Decreasing Max Affinity *********/
 class Algo2DFFDMax : public Algo2DFF
 {
@@ -122,7 +109,6 @@ public:
 private:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
-
 
 /************ First Fit Decreasing Surrogate Affinity *********/
 class Algo2DFFDSurrogate : public Algo2DFF
@@ -133,7 +119,6 @@ public:
 protected:
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
-
 
 /************ First Fit Decreasing Extended Sum Affinity *********/
 class Algo2DFFDExtendedSum : public Algo2DFF
@@ -174,18 +159,6 @@ private:
     virtual void updateBinMeasure(Bin2D* bin);
 };
 
-
-/************ Best Fit Decreasing CPU Affinity *********/
-class Algo2DBFDCPU : public Algo2DBFDAvg
-{
-public:
-    Algo2DBFDCPU(const Instance2D &instance);
-private:
-    virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
-    virtual void updateBinMeasure(Bin2D* bin);
-};
-
-
 /************ Best Fit Decreasing Average with Exponential Weights Affinity *********/
 class Algo2DBFDAvgExpo : public Algo2DBFDAvg
 {
@@ -201,8 +174,6 @@ protected:
     int total_residual_cpu;
     int total_residual_mem;
 };
-
-
 
 /************ Best Fit Decreasing Surrogate Affinity *********/
 class Algo2DBFDSurrogate : public Algo2DBFDAvgExpo
@@ -248,15 +219,6 @@ class Algo2DWFDMax : public Algo2DBFDMax
 {
 public:
     Algo2DWFDMax(const Instance2D &instance);
-private:
-    virtual void sortBins();
-};
-
-/************ Worst Fit Decreasing CPU Affinity *********/
-class Algo2DWFDCPU : public Algo2DBFDCPU
-{
-public:
-    Algo2DWFDCPU(const Instance2D &instance);
 private:
     virtual void sortBins();
 };
@@ -328,6 +290,15 @@ protected:
     virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list, Bin2D* bin);
 };
 
+/********* Bin Centric FFD DotDivision ***************/
+class Algo2DBinFFDDotDivision : public Algo2DBinFFDDotProduct
+{
+public:
+    Algo2DBinFFDDotDivision(const Instance2D &instance);
+
+protected:
+    virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
+};
 
 /********* Bin Centric FFD L2Norm ***************/
 class Algo2DBinFFDL2Norm : public Algo2DBinFFDDotProduct
@@ -338,7 +309,6 @@ public:
 protected:
     virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
 };
-
 
 /********* Bin Centric FFD Fitness ***************/
 class Algo2DBinFFDFitness : public Algo2DBinFFDDotProduct
@@ -353,28 +323,6 @@ protected:
     virtual void addItemToBin(Application2D *app, int replica_id, Bin2D *bin);
     int total_residual_cpu;
     int total_residual_mem;
-};
-
-
-/********* Bin Centric FFD Fitness Division ***************/
-class Algo2DBinFFDFitnessDiv : public Algo2DBinFFDFitness
-{
-public:
-    Algo2DBinFFDFitnessDiv(const Instance2D &instance);
-
-protected:
-    virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
-};
-
-
-/********* Bin Centric FFD DotDivision ***************/
-class Algo2DBinFFDDotDivision : public Algo2DBinFFDDotProduct
-{
-public:
-    Algo2DBinFFDDotDivision(const Instance2D &instance);
-
-protected:
-    virtual void computeMeasures(AppList2D::iterator start_list, AppList2D::iterator end_list,  Bin2D* bin);
 };
 
 
