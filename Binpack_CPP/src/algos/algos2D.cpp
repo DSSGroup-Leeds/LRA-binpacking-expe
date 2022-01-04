@@ -973,8 +973,10 @@ void Algo2DBinFFDL2Norm::computeMeasures(AppList2D::iterator start_list, AppList
         // Use normalized values of app size and bin residual capacity
         float a = (bin->getAvailableCPUCap() / bin->getMaxCPUCap()) - app->getNormalizedCPU();
         float b = (bin->getAvailableMemCap() / bin->getMaxMemCap()) - app->getNormalizedMemory();
-        float measure = - a*a + b*b;
-        app->setMeasure(measure);
+        float measure = a*a + b*b;
+
+        // Minus sign to have reverse order
+        app->setMeasure(-measure);
     }
 }
 
