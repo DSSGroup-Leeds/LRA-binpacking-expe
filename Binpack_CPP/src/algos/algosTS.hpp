@@ -167,12 +167,13 @@ public:
     AlgoTSBFDAvgExpo(const InstanceTS &instance);
 private:
     virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
+    virtual void sortBins();
     virtual void createNewBin();
     virtual void addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin);
     virtual void updateBinMeasure(BinTS* bin);
 protected:
-    float total_residual_cpu;
-    float total_residual_mem;
+    ResourceTS sum_residual_cpu; // Sum of residual capacity
+    ResourceTS sum_residual_mem; // of all bins for each time step
 };
 
 
@@ -185,6 +186,7 @@ public:
 
 private:
     virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
+    virtual void sortBins();
     virtual void updateBinMeasure(BinTS* bin);
 };
 
@@ -196,13 +198,60 @@ public:
 
 private:
     virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
-    virtual void createNewBin();
-    virtual void addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin);
+    virtual void sortBins();
+    //virtual void createNewBin();
+    //virtual void addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin);
     virtual void updateBinMeasure(BinTS* bin);
+};
 
-protected:
-    ResourceTS sum_residual_cpu; // Sum of residual capacity
-    ResourceTS sum_residual_mem; // of all bins for each time step
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/************ Worst Fit Decreasing Avg Affinity *********/
+class AlgoTSWFDAvg : public AlgoTSBFDAvg
+{
+public:
+    AlgoTSWFDAvg(const InstanceTS &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing Max Affinity *********/
+class AlgoTSWFDMax : public AlgoTSBFDMax
+{
+public:
+    AlgoTSWFDMax(const InstanceTS &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing AvgExpo Affinity *********/
+class AlgoTSWFDAvgExpo : public AlgoTSBFDAvgExpo
+{
+public:
+    AlgoTSWFDAvgExpo(const InstanceTS &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing Surrogate Affinity *********/
+class AlgoTSWFDSurrogate : public AlgoTSBFDSurrogate
+{
+public:
+    AlgoTSWFDSurrogate(const InstanceTS &instance);
+private:
+    virtual void sortBins();
+};
+
+/************ Worst Fit Decreasing ExtendedSum Affinity *********/
+class AlgoTSWFDExtendedSum : public AlgoTSBFDExtendedSum
+{
+public:
+    AlgoTSWFDExtendedSum(const InstanceTS &instance);
+private:
+    virtual void sortBins();
 };
 
 
@@ -221,8 +270,18 @@ protected:
     virtual void allocateBatch(AppListTS::iterator first_app, AppListTS::iterator end_batch);
     virtual bool isBinFilled(BinTS* bin);
     virtual void computeMeasures(AppListTS::iterator start_list, AppListTS::iterator end_list, BinTS* bin);
+    virtual BinTS* createNewBinRet();
 };
 
+/********* Bin Centric FFD DotDivision ***************/
+class AlgoTSBinFFDDotDivision : public AlgoTSBinFFDDotProduct
+{
+public:
+    AlgoTSBinFFDDotDivision(const InstanceTS &instance);
+
+protected:
+    virtual void computeMeasures(AppListTS::iterator start_list, AppListTS::iterator end_list,  BinTS* bin);
+};
 
 /********* Bin Centric FFD L2Norm ***************/
 class AlgoTSBinFFDL2Norm : public AlgoTSBinFFDDotProduct
@@ -243,6 +302,11 @@ public:
 
 protected:
     virtual void computeMeasures(AppListTS::iterator start_list, AppListTS::iterator end_list, BinTS* bin);
+
+    virtual BinTS* createNewBinRet();
+    virtual void addItemToBin(ApplicationTS *app, int replica_id, BinTS* bin);
+    ResourceTS sum_residual_cpu; // Sum of residual capacity
+    ResourceTS sum_residual_mem; // of all bins for each time step
 };
 
 

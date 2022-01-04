@@ -57,15 +57,40 @@ AlgoFitTS* createAlgoTS(const std::string& algo_name, const InstanceTS &instance
         return new AlgoTSBFDExtendedSum(instance);
     }
 
-    else if (algo_name == "FFD-DotProduct")
+    else if(algo_name == "WFD-Avg")
+    {
+        return new AlgoTSWFDAvg(instance);
+    }
+    else if(algo_name == "WFD-Max")
+    {
+        return new AlgoTSWFDMax(instance);
+    }
+    else if(algo_name == "WFD-AvgExpo")
+    {
+        return new AlgoTSWFDAvgExpo(instance);
+    }
+    else if(algo_name == "WFD-Surrogate")
+    {
+        return new AlgoTSWFDSurrogate(instance);
+    }
+    else if (algo_name == "WFD-ExtendedSum")
+    {
+        return new AlgoTSWFDExtendedSum(instance);
+    }
+
+    else if (algo_name == "NCD-DotProduct")
     {
         return new AlgoTSBinFFDDotProduct(instance);
     }
-    else if (algo_name == "FFD-L2Norm")
+    else if (algo_name == "NCD-DotDivision")
+    {
+        return new AlgoTSBinFFDDotDivision(instance);
+    }
+    else if (algo_name == "NCD-L2Norm")
     {
         return new AlgoTSBinFFDL2Norm(instance);
     }
-    else if (algo_name == "FFD-Fitness")
+    else if (algo_name == "NCD-Fitness")
     {
         return new AlgoTSBinFFDFitness(instance);
     }
@@ -74,6 +99,36 @@ AlgoFitTS* createAlgoTS(const std::string& algo_name, const InstanceTS &instance
         return nullptr; // This should never happen
     }
 }
+
+AlgoTSSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance)
+{
+    if (algo_name == "SpreadWFD-Avg")
+    {
+        return new AlgoTSSpreadWFDAvg(instance);
+    }
+    else if (algo_name == "SpreadWFD-Max")
+    {
+        return new AlgoTSSpreadWFDMax(instance);
+    }
+    else if (algo_name == "SpreadWFD-Surrogate")
+    {
+        return new AlgoTSSpreadWFDSurrogate(instance);
+    }
+    /*else if (algo_name == "SpreadWFD-AvgExpo")
+    {
+        return new AlgoTSSpreadWFDAvgExpo(instance);
+    }*/
+    /*else if (algo_name == "SpreadWFD-ExtendedSum")
+    {
+        return new AlgoTSSpreadWFDExtendedSum(instance);
+    }*/
+    else
+    {
+        return nullptr; // This should never happen
+    }
+}
+
+
 
 AlgoFitTS::AlgoFitTS(const InstanceTS & instance):
     instance_name(instance.getId()),
@@ -386,8 +441,7 @@ void AlgoTSBFDAvg::sortBins() {
     // The measure of the bins should have been updated before
     // Only need to sort the bins from current onward
     // Bins before curr_bin_index cannot accomodate replicas of the current application
-    auto start_bin = bins.begin() + curr_bin_index;
-    bubble_bin_up(start_bin, bins.end(), bin2D_comparator_measure_increasing);
+    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
 }
 
 bool AlgoTSBFDAvg::checkItemToBin(ApplicationTS* app, BinTS* bin) const
@@ -406,7 +460,7 @@ void AlgoTSBFDAvg::addItemToBin(ApplicationTS* app, int replica_id, BinTS* bin)
 void AlgoTSBFDAvg::updateBinMeasure(BinTS *bin)
 {
     // measure = normalised residual cpu + normalised residual memory
-    float measure = (bin->getTotalResidualCPU() / bin->getMaxCPUCap()) + (bin->getTotalResidualMem() / bin->getMaxMemCap());
+    float measure = (bin->getTotalResidualCPU() / bin_cpu_capacity) + (bin->getTotalResidualMem() / bin_mem_capacity);
     bin->setMeasure(measure);
 }
 
@@ -439,7 +493,7 @@ void AlgoTSBFDMax::updateBinMeasure(BinTS *bin)
             max_mem = bin_mem_caps[i];
         }
     }
-    float measure = std::max((max_cpu / bin->getMaxCPUCap()), (max_mem / bin->getMaxMemCap()));
+    float measure = std::max((max_cpu / bin_cpu_capacity), (max_mem / bin_mem_capacity));
     bin->setMeasure(measure);
 }
 
@@ -448,8 +502,8 @@ void AlgoTSBFDMax::updateBinMeasure(BinTS *bin)
 /************ Best Average with Exponential Weights Affinity *********/
 AlgoTSBFDAvgExpo::AlgoTSBFDAvgExpo(const InstanceTS &instance):
     AlgoTSBFDAvg(instance),
-    total_residual_cpu(0.0),
-    total_residual_mem(0.0)
+    sum_residual_cpu(size_TS, 0.0),
+    sum_residual_mem(size_TS, 0.0)
 { }
 
 void AlgoTSBFDAvgExpo::sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it)
@@ -457,42 +511,65 @@ void AlgoTSBFDAvgExpo::sortApps(AppListTS::iterator first_app, AppListTS::iterat
     stable_sort(first_app, end_it, application2D_comparator_avgexpo_size_decreasing);
 }
 
+void AlgoTSBFDAvgExpo::sortBins() {
+    // The measure of the bins should have been updated before
+    // Need to sort all bins since all measures have changed
+    stable_sort(bins.begin()+curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
+}
+
 void AlgoTSBFDAvgExpo::createNewBin()
 {
     bins.push_back(new BinTS(next_bin_index, bin_cpu_capacity, bin_mem_capacity, size_TS));
     next_bin_index += 1;
 
-    total_residual_cpu += bin_cpu_capacity * size_TS;
-    total_residual_mem += bin_mem_capacity * size_TS;
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        sum_residual_cpu[i] += bin_cpu_capacity;
+        sum_residual_mem[i] += bin_mem_capacity;
+    }
 }
 
 void AlgoTSBFDAvgExpo::addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin)
 {
-    // To update only with the total capacity of the app
-    total_residual_cpu -= bin->getTotalResidualCPU();
-    total_residual_mem -= bin->getTotalResidualMem();
-
     bin->addNewConflict(app);
     bin->addItem(app, replica_id);
 
-    // To update only with the total capacity of the app
-    // In the end, only the total consumption of the app was removed
-    total_residual_cpu += bin->getTotalResidualCPU();
-    total_residual_mem += bin->getTotalResidualMem();
+    const ResourceTS& app_cpu = app->getCpuUsage();
+    const ResourceTS& app_mem = app->getMemUsage();
+
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        sum_residual_cpu[i] -= app_cpu[i];
+        sum_residual_mem[i] -= app_mem[i];
+    }
+
+    updateBinMeasure(bin);
 }
 
 
 void AlgoTSBFDAvgExpo::updateBinMeasure(BinTS *bin)
 {
-    // measure = exp(0.01* (sum residual capacity all bins)/(nb bin * bin capacity) * normalised residual cpu + same with memory
-    int bin_cpu_cap = bin->getMaxCPUCap();
-    int bin_mem_cap = bin->getMaxMemCap();
-    float factor_cpu = std::exp(0.01 * total_residual_cpu / (bin_cpu_cap * bins.size())) / bin_cpu_cap;
-    float factor_mem = std::exp(0.01 * total_residual_mem / (bin_mem_cap * bins.size())) / bin_mem_cap;
+    ResourceTS factors_cpu(size_TS, 0.0);
+    ResourceTS factors_mem(size_TS, 0.0);
+
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        factors_cpu[i] = std::exp(0.01 * sum_residual_cpu[i] / (bin_cpu_capacity * bins.size())) / bin_cpu_capacity;
+        factors_mem[i] = std::exp(0.01 * sum_residual_mem[i] / (bin_mem_capacity * bins.size())) / bin_mem_capacity;
+    }
 
     for(auto it_bin = (bins.begin()+curr_bin_index); it_bin != bins.end(); ++it_bin)
     {
-        float measure = factor_cpu * (*it_bin)->getAvailableCPUCap() + factor_mem * (*it_bin)->getAvailableMemCap();
+        const ResourceTS& bin_cpu_caps = (*it_bin)->getAvailableCPUCaps();
+        const ResourceTS& bin_mem_caps = (*it_bin)->getAvailableMemCaps();
+        float measure = 0.0;
+        for(size_t i = 0; i < size_TS; ++i)
+        {
+            // For all timestep and cpu/memory
+            // measure += exp(0.01 * (sum residual capacity all bins) / (nb bins * bin capacity)) * norm residual capacity
+            // No need to normalized bin residual capaciies here because already done in factors
+            measure += factors_cpu[i] * bin_cpu_caps[i] + factors_mem[i] * bin_mem_caps[i];
+        }
         (*it_bin)->setMeasure(measure);
     }
 }
@@ -509,17 +586,33 @@ void AlgoTSBFDSurrogate::sortApps(AppListTS::iterator first_app, AppListTS::iter
     stable_sort(first_app, end_it, application2D_comparator_surrogate_size_decreasing);
 }
 
+void AlgoTSBFDSurrogate::sortBins() {
+    // The measure of the bins should have been updated before
+    // Need to sort all bins since all measures have changed
+    stable_sort(bins.begin()+curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
+}
+
 void AlgoTSBFDSurrogate::updateBinMeasure(BinTS *bin)
 {
     // measure = lambda norm residual cpu + (1-lambda) * norm residual mem
-    int bin_cpu_cap = bin->getMaxCPUCap();
-    int bin_mem_cap = bin->getMaxMemCap();
-
-    float lambda = total_residual_cpu / (total_residual_cpu + total_residual_mem);
+    // adapted for time series
+    float lambda_ratio = 0.0;
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        // Compute sum of normalzed residual capacities
+        lambda_ratio += sum_residual_cpu[i] + sum_residual_mem[i];
+    }
 
     for(auto it_bin = (bins.begin()+curr_bin_index); it_bin != bins.end(); ++it_bin)
     {
-        float measure = lambda * ((*it_bin)->getAvailableCPUCap() / bin_cpu_cap) + (1-lambda) * ((*it_bin)->getAvailableMemCap() / bin_mem_cap);
+        const ResourceTS& bin_cpu_caps = (*it_bin)->getAvailableCPUCaps();
+        const ResourceTS& bin_mem_caps = (*it_bin)->getAvailableMemCaps();
+        float measure = 0.0;
+        for(size_t i = 0; i < size_TS; ++i)
+        {
+            measure += (sum_residual_cpu[i] / lambda_ratio) * bin_cpu_caps[i] / bin_cpu_capacity;
+            measure += (sum_residual_mem[i] / lambda_ratio) * bin_mem_caps[i] / bin_mem_capacity;
+        }
         (*it_bin)->setMeasure(measure);
     }
 }
@@ -529,9 +622,7 @@ void AlgoTSBFDSurrogate::updateBinMeasure(BinTS *bin)
 
 /************ Best Fit Decreasing Extended Sum Affinity *********/
 AlgoTSBFDExtendedSum::AlgoTSBFDExtendedSum(const InstanceTS &instance):
-    AlgoTSBFDAvgExpo(instance),
-    sum_residual_cpu(size_TS, 0.0),
-    sum_residual_mem(size_TS, 0.0)
+    AlgoTSBFDAvgExpo(instance)
 { }
 
 void AlgoTSBFDExtendedSum::sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it)
@@ -539,41 +630,12 @@ void AlgoTSBFDExtendedSum::sortApps(AppListTS::iterator first_app, AppListTS::it
     stable_sort(first_app, end_it, application2D_comparator_extsum_size_decreasing);
 }
 
-void AlgoTSBFDExtendedSum::createNewBin()
-{
-    bins.push_back(new BinTS(next_bin_index, bin_cpu_capacity, bin_mem_capacity, size_TS));
-    next_bin_index += 1;
-
-    for(size_t i = 0; i < size_TS; ++i)
-    {
-        sum_residual_cpu[i] += bin_cpu_capacity;
-        sum_residual_mem[i] += bin_mem_capacity;
-    }
+void AlgoTSBFDExtendedSum::sortBins() {
+    // The measure of the bins should have been updated before
+    // Need to sort all bins since all measures have changed
+    stable_sort(bins.begin()+curr_bin_index, bins.end(), bin2D_comparator_measure_increasing);
 }
 
-void AlgoTSBFDExtendedSum::addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin)
-{
-    // TODO the time complexity could be improved!
-    // To update only with the total capacity of the app
-    const ResourceTS& bin_cpu_caps = bin->getAvailableCPUCaps();
-    const ResourceTS& bin_mem_caps = bin->getAvailableMemCaps();
-    for(size_t i = 0; i < size_TS; ++i)
-    {
-        sum_residual_cpu[i] -= bin_cpu_caps[i];
-        sum_residual_mem[i] -= bin_mem_caps[i];
-    }
-
-    bin->addNewConflict(app);
-    bin->addItem(app, replica_id);
-
-    // To update only with the total capacity of the app
-    // In the end, only the total consumption of the app was removed
-    for(size_t i = 0; i < size_TS; ++i)
-    {
-        sum_residual_cpu[i] -= bin_cpu_caps[i];
-        sum_residual_mem[i] -= bin_mem_caps[i];
-    }
-}
 
 void AlgoTSBFDExtendedSum::updateBinMeasure(BinTS *bin)
 {
@@ -595,6 +657,59 @@ void AlgoTSBFDExtendedSum::updateBinMeasure(BinTS *bin)
         }
         (*it_bin)->setMeasure(measure);
     }
+}
+
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/************ Worst Fit Decreasing Avg Affinity *********/
+AlgoTSWFDAvg::AlgoTSWFDAvg(const Instance2D &instance):
+    AlgoTSBFDAvg(instance)
+{ }
+
+void AlgoTSWFDAvg::sortBins() {
+    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+}
+
+/************ Worst Fit Decreasing Max Affinity *********/
+AlgoTSWFDMax::AlgoTSWFDMax(const Instance2D &instance):
+    AlgoTSBFDMax(instance)
+{ }
+
+void AlgoTSWFDMax::sortBins() {
+    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+}
+
+
+/************ Worst Fit Decreasing AvgExpo Affinity *********/
+AlgoTSWFDAvgExpo::AlgoTSWFDAvgExpo(const Instance2D &instance):
+    AlgoTSBFDAvgExpo(instance)
+{ }
+
+void AlgoTSWFDAvgExpo::sortBins() {
+    stable_sort(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+}
+
+
+/************ Worst Fit Decreasing Surrogate Affinity *********/
+AlgoTSWFDSurrogate::AlgoTSWFDSurrogate(const Instance2D &instance):
+    AlgoTSBFDSurrogate(instance)
+{ }
+
+void AlgoTSWFDSurrogate::sortBins() {
+    stable_sort(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+}
+
+
+/************ Worst Fit Decreasing ExtendedSum Affinity *********/
+AlgoTSWFDExtendedSum::AlgoTSWFDExtendedSum(const Instance2D &instance):
+    AlgoTSBFDExtendedSum(instance)
+{ }
+
+void AlgoTSWFDExtendedSum::sortBins() {
+    stable_sort(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
 }
 
 
@@ -635,12 +750,20 @@ void AlgoTSBinFFDDotProduct::computeMeasures(AppListTS::iterator start_list, App
         float measure = 0.0;
         for (size_t i = 0; i < size_TS; ++i)
         {
-            measure += app_norm_cpu[i] * bin_cpu_caps[i] / bin->getMaxCPUCap();
-            measure += app_norm_mem[i] * bin_mem_caps[i] / bin->getMaxMemCap();
+            measure += app_norm_cpu[i] * bin_cpu_caps[i] / bin_cpu_capacity;
+            measure += app_norm_mem[i] * bin_mem_caps[i] / bin_mem_capacity;
         }
 
         app->setMeasure(measure);
     }
+}
+
+BinTS* AlgoTSBinFFDDotProduct::createNewBinRet()
+{
+    BinTS* bin = new BinTS(next_bin_index, bin_cpu_capacity, bin_mem_capacity, size_TS);
+    next_bin_index += 1;
+    bins.push_back(bin);
+    return bin;
 }
 
 void AlgoTSBinFFDDotProduct::allocateBatch(AppListTS::iterator first_app, AppListTS::iterator end_batch)
@@ -661,9 +784,7 @@ void AlgoTSBinFFDDotProduct::allocateBatch(AppListTS::iterator first_app, AppLis
     while(next_treated_app_it != end_list)
     {
         // Open a new bin
-        curr_bin = new BinTS(next_bin_index, bin_cpu_capacity, bin_mem_capacity, size_TS);
-        next_bin_index += 1;
-        bins.push_back(curr_bin);
+        curr_bin = createNewBinRet();
 
         auto current_app_it = next_treated_app_it;
         // This is a quick safe guard to avoid infinite loops and running out of memory
@@ -723,6 +844,34 @@ void AlgoTSBinFFDDotProduct::allocateBatch(AppListTS::iterator first_app, AppLis
 
 
 
+/********* Bin Centric FFD DotDivision ***************/
+AlgoTSBinFFDDotDivision::AlgoTSBinFFDDotDivision(const InstanceTS &instance):
+    AlgoTSBinFFDDotProduct(instance)
+{ }
+
+void AlgoTSBinFFDDotDivision::computeMeasures(AppListTS::iterator start_list, AppListTS::iterator end_list, BinTS *bin)
+{
+    const ResourceTS& bin_cpu_caps = bin->getAvailableCPUCaps();
+    const ResourceTS& bin_mem_caps = bin->getAvailableMemCaps();
+    for(auto it = start_list; it != end_list; ++it)
+    {
+        ApplicationTS * app = *it;
+        // Use normalized values of app size and bin residual capacity
+        const ResourceTS& app_norm_cpu = app->getNormCpuUsage();
+        const ResourceTS& app_norm_mem = app->getNormMemUsage();
+        float measure = 0.0;
+        for (size_t i = 0; i < size_TS; ++i)
+        {
+            measure += app_norm_cpu[i] * bin_cpu_capacity / bin_cpu_caps[i];
+            measure += app_norm_mem[i] * bin_mem_capacity / bin_mem_caps[i];
+        }
+
+        app->setMeasure(measure);
+    }
+}
+
+
+
 /********* Bin Centric FFD L2Norm ***************/
 AlgoTSBinFFDL2Norm::AlgoTSBinFFDL2Norm(const InstanceTS &instance):
     AlgoTSBinFFDDotProduct(instance)
@@ -741,12 +890,13 @@ void AlgoTSBinFFDL2Norm::computeMeasures(AppListTS::iterator start_list, AppList
         float measure = 0.0;
         for (size_t i = 0; i < size_TS; ++i)
         {
-            float a = (bin_cpu_caps[i] / bin->getMaxCPUCap()) - app_norm_cpu[i];
-            float b = (bin_mem_caps[i] / bin->getMaxMemCap()) - app_norm_mem[i];
+            float a = (bin_cpu_caps[i] / bin_cpu_capacity) - app_norm_cpu[i];
+            float b = (bin_mem_caps[i] / bin_mem_capacity) - app_norm_mem[i];
             measure += a*a + b*b;
         }
 
-        app->setMeasure(measure);
+        // Minus sign to have reverse order
+        app->setMeasure(-measure);
     }
 }
 
@@ -754,34 +904,40 @@ void AlgoTSBinFFDL2Norm::computeMeasures(AppListTS::iterator start_list, AppList
 
 /********* Bin Centric FFD Fitness ***************/
 AlgoTSBinFFDFitness::AlgoTSBinFFDFitness(const InstanceTS &instance):
-    AlgoTSBinFFDDotProduct(instance)
+    AlgoTSBinFFDDotProduct(instance),
+    sum_residual_cpu(size_TS, 0.0),
+    sum_residual_mem(size_TS, 0.0)
 { }
+
+BinTS* AlgoTSBinFFDFitness::createNewBinRet()
+{
+    BinTS* bin = AlgoTSBinFFDDotProduct::createNewBinRet();
+
+    for (size_t i = 0; size_t < size_TS; ++i)
+    {
+        sum_residual_cpu[i] += bin_cpu_capacity;
+        sum_residual_mem[i] += bin_mem_capacity;
+    }
+
+    return bin;
+}
+
+void AlgoTSBinFFDFitness::addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin)
+{
+    AlgoTSBinFFDDotProduct::addItemToBin(app, replica_id, bin);
+
+    const ResourceTS& app_cpu = app->getCpuUsage();
+    const ResourceTS& app_mem = app->getMemUsage();
+
+    for (size_t i = 0; size_t < size_TS; ++i)
+    {
+        sum_residual_cpu[i] -= app_cpu[i];
+        sum_residual_mem[i] -= app_mem[i];
+    }
+}
 
 void AlgoTSBinFFDFitness::computeMeasures(AppListTS::iterator start_list, AppListTS::iterator end_list, BinTS *bin)
 {
-    // TODO This complexity is too much
-    // Could be greatly improved by keeping the values of the already
-    // packed bins (since the algo is bin-centric)
-    // Compute the resudual capacity of bins for each point of the time series
-    ResourceTS sum_res_cpu(size_TS, 0.0);
-    ResourceTS sum_res_mem(size_TS, 0.0);
-    for(BinTS * bb : bins)
-    {
-        const ResourceTS& bin_res_cpu = bb->getAvailableCPUCaps();
-        const ResourceTS& bin_res_mem = bb->getAvailableMemCaps();
-
-        for (size_t i = 0; i < size_TS; ++i)
-        {
-            sum_res_cpu[i] += bin_res_cpu[i];
-            sum_res_mem[i] += bin_res_mem[i];
-        }
-    }
-    for (size_t i = 0; i < size_TS; ++i)
-    {
-        sum_res_cpu[i] = sum_res_cpu[i] / bin->getMaxCPUCap();
-        sum_res_mem[i] = sum_res_mem[i] / bin->getMaxMemCap();
-    }
-    // Use normalized values of app size and bin residual capacity
     const ResourceTS& bin_res_cpu = bin->getAvailableCPUCaps();
     const ResourceTS& bin_res_mem = bin->getAvailableMemCaps();
     for(auto it = start_list; it != end_list; ++it)
@@ -793,8 +949,9 @@ void AlgoTSBinFFDFitness::computeMeasures(AppListTS::iterator start_list, AppLis
         float measure = 0.0;
         for (size_t i = 0; i < size_TS; ++i)
         {
-            float a = (app_norm_cpu[i] * bin_res_cpu[i]) / (sum_cpu_TS[i] * sum_res_cpu[i] * bin->getMaxCPUCap());
-            float b = (app_norm_mem[i] * bin_res_mem[i]) / (sum_mem_TS[i] * sum_res_mem[i] * bin->getMaxMemCap());
+            // No need to use normalized values of total and residual bin capacities
+            float a = (app_norm_cpu[i] * bin_res_cpu[i]) / (sum_cpu_TS[i] * sum_residual_cpu[i]);
+            float b = (app_norm_mem[i] * bin_res_mem[i]) / (sum_mem_TS[i] * sum_residual_mem[i]);
             measure += a + b;
         }
 
