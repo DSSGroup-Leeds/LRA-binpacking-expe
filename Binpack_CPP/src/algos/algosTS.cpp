@@ -958,3 +958,346 @@ void AlgoTSBinFFDFitness::computeMeasures(AppListTS::iterator start_list, AppLis
         app->setMeasure(measure);
     }
 }
+
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/*********** Spread replicas Worst Fit Avg **********/
+AlgoTSSpreadWFDAvg::AlgoTSSpreadWFDAvg(const InstanceTS &instance):
+    AlgoFitTS(instance)
+{ }
+
+int AlgoTSSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
+{
+    // First, try to find a solution with UB_bins
+    if (!trySolve(UB_bins))
+    {
+        // If no solution found, refine values of LB and increase UB
+        bool sol_found = false;
+        while (!sol_found)
+        {
+            LB_bins = UB_bins+1; // No solution was found, UB+1 is a new lower bound
+            UB_bins += 51; // +1 to be in par with the +1 of LB
+
+            sol_found = trySolve(UB_bins);
+        }
+    }
+
+    // Store the current solution
+    BinListTS best_bins = getBinsCopy();
+    int best_sol = UB_bins;
+    int low_bound = LB_bins;
+    int target_bins;
+
+    // Then iteratively try to improve on the solution
+    while(low_bound < best_sol)
+    {
+        target_bins = (low_bound + best_sol)/2;
+
+        if (trySolve(target_bins))
+        {
+            // Update the best solution
+            best_sol = target_bins;
+            for (BinTS* bin : best_bins)
+            {
+                if (bin != nullptr)
+                {
+                    delete bin;
+                }
+            }
+            best_bins.clear();
+            best_bins = getBinsCopy();
+        }
+        else
+        {
+            // Update bound of search
+            low_bound = target_bins+1;
+        }
+    }
+    setSolution(best_bins);
+    return best_sol;
+}
+
+bool AlgoTSSpreadWFDAvg::trySolve(int nb_bins)
+{
+    clearSolution();
+    createBins(nb_bins);
+
+    // For each app in the list, try to put all replicas in separate bins
+    BinTS* curr_bin = nullptr;
+    sortApps(apps.begin(), apps.end());
+    auto current_app_it = apps.begin();
+    while(current_app_it != apps.end())
+    {
+        ApplicationTS * app = *current_app_it;
+        curr_bin_index = 0;
+        int replica_index = app->getNbReplicas()-1;
+        while(replica_index >= 0) // There are still replicas to pack
+        {
+            bool replica_packed = false;
+            int start_bin_index = curr_bin_index;
+            while(!replica_packed)
+            {
+                curr_bin = bins.at(curr_bin_index);
+                if (checkItemToBin(app, curr_bin))
+                {
+                    addItemToBin(app, replica_index, curr_bin);
+                    updateBinMeasure(curr_bin);
+                    replica_packed = true;
+                    replica_index -= 1;
+                }
+
+                // Advance to next bin
+                if (curr_bin_index == (nb_bins-1))
+                {
+                    curr_bin_index = 0; // Reset
+                }
+                else
+                {
+                    curr_bin_index += 1;
+                }
+
+                // If all bins were checked and the item cannot be packed
+                if (!replica_packed and (curr_bin_index == start_bin_index))
+                {
+                    //std::cout << "Could not pack replica " << replica_index << " of app " << app->getId() << std::endl;
+                    return false;
+                }
+            }
+        }
+        //std::cout << "All replicas of app " << app->getId() << " were packed. Updating bins order" << std::endl;
+        current_app_it++;
+        updateBinMeasures();
+        sortBins();
+    }
+    return true;
+}
+
+void AlgoTSSpreadWFDAvg::createBins(int nb_bins)
+{
+    bins.reserve(nb_bins);
+    for (int i = 0; i < nb_bins; ++i)
+    {
+        BinTS* bin = new BinTS(i, bin_cpu_capacity, bin_mem_capacity);
+        updateBinMeasure(bin);
+        bins.push_back(bin);
+    }
+}
+
+
+void AlgoTSSpreadWFDAvg::updateBinMeasure(BinTS* bin)
+{
+    float measure = (bin->getTotalResidualCPU() / bin_cpu_capacity) + (bin->getTotalResidualMem() / bin_mem_capacity);
+    bin->setMeasure(measure);
+}
+
+void AlgoTSSpreadWFDAvg::updateBinMeasures(){ }
+
+
+void AlgoTSSpreadWFDAvg::allocateBatch(AppListTS::iterator first_app, AppListTS::iterator end_batch)
+{
+    std::cout << "For Spread algorithm please call 'solveInstanceSpread' instead" << std::endl;
+    return;
+}
+
+void AlgoTSSpreadWFDAvg::sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_avg_size_decreasing);
+}
+
+void AlgoTSSpreadWFDAvg::sortBins()
+{
+    stable_sort(bins.begin(), bins.end(), bin2D_comparator_measure_decreasing);
+}
+
+bool AlgoTSSpreadWFDAvg::checkItemToBin(ApplicationTS* app, BinTS* bin) const
+{
+    return (bin->doesItemFit(app->getCPUSize(), app->getMemorySize())) and (bin->isAffinityCompliant(app));
+}
+
+void AlgoTSSpreadWFDAvg::addItemToBin(ApplicationTS* app, int replica_id, BinTS* bin)
+{
+    bin->addNewConflict(app);
+    bin->addItem(app, replica_id);
+}
+
+
+
+/*********** Spread replicas Worst Fit Max **********/
+AlgoTSSpreadWFDMax::AlgoTSSpreadWFDMax(const InstanceTS &instance):
+    AlgoTSSpreadWFDAvg(instance)
+{ }
+
+void AlgoTSSpreadWFDMax::updateBinMeasure(BinTS* bin)
+{
+    const ResourceTS& bin_cpu_caps = bin->getAvailableCPUCaps();
+    const ResourceTS& bin_mem_caps = bin->getAvailableMemCaps();
+    float max_cpu = 0.0;
+    float max_mem = 0.0;
+    for (size_t i = 0; i < size_TS; ++i)
+    {
+        if ( bin_cpu_caps[i] > max_cpu)
+        {
+            max_cpu = bin_cpu_caps[i];
+        }
+        if (bin_mem_caps[i] > max_mem)
+        {
+            max_mem = bin_mem_caps[i];
+        }
+    }
+    float measure = std::max((max_cpu / bin_cpu_capacity), (max_mem / bin_mem_capacity));
+    bin->setMeasure(measure);
+}
+
+void AlgoTSSpreadWFDMax::sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_max_size_decreasing);
+}
+
+
+
+
+/*********** Spread replicas Worst Fit Surrogate **********/
+AlgoTSSpreadWFDSurrogate::AlgoTSSpreadWFDSurrogate(const InstanceTS &instance):
+    AlgoTSSpreadWFDAvg(instance),
+    sum_residual_cpu(size_TS, 0.0),
+    sum_residual_mem(size_TS, 0.0)
+{ }
+
+void AlgoTSSpreadWFDSurrogate::sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_surrogate_size_decreasing);
+}
+
+void AlgoTSSpreadWFDSurrogate::updateBinMeasure(BinTS* bin) { }
+
+void AlgoTSSpreadWFDSurrogate::updateBinMeasures()
+{
+    // measure = lambda norm residual cpu + (1-lambda) * norm residual mem
+    float lambda_ratio = 0.0;
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        // Compute sum of normalzed residual capacities
+        lambda_ratio += sum_residual_cpu[i] + sum_residual_mem[i];
+    }
+
+    for(auto it_bin = (bins.begin()+curr_bin_index); it_bin != bins.end(); ++it_bin)
+    {
+        const ResourceTS& bin_cpu_caps = (*it_bin)->getAvailableCPUCaps();
+        const ResourceTS& bin_mem_caps = (*it_bin)->getAvailableMemCaps();
+        float measure = 0.0;
+        for(size_t i = 0; i < size_TS; ++i)
+        {
+            measure += (sum_residual_cpu[i] / lambda_ratio) * bin_cpu_caps[i] / bin_cpu_capacity;
+            measure += (sum_residual_mem[i] / lambda_ratio) * bin_mem_caps[i] / bin_mem_capacity;
+        }
+        (*it_bin)->setMeasure(measure);
+    }
+}
+
+void AlgoTSSpreadWFDSurrogate::createBins(int nb_bins)
+{
+    bins.reserve(nb_bins);
+    for (int i = 0; i < nb_bins; ++i)
+    {
+        BinTS* bin = new BinTS(i, bin_cpu_capacity, bin_mem_capacity);
+        bins.push_back(bin);
+    }
+
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        sum_residual_cpu[i] = nb_bins * bin_cpu_capacity;
+        sum_residual_mem[i] = nb_bins * bin_mem_capacity;
+    }
+}
+
+void AlgoTSSpreadWFDSurrogate::addItemToBin(ApplicationTS* app, int replica_id, BinTS* bin)
+{
+    bin->addNewConflict(app);
+    bin->addItem(app, replica_id);
+
+    const ResourceTS& app_cpu = app->getCpuUsage();
+    const ResourceTS& app_mem = app->getMemUsage();
+
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        sum_residual_cpu[i] -= app_cpu[i];
+        sum_residual_mem[i] -= app_mem[i];
+    }
+}
+
+
+/*********** Spread replicas Worst Fit AvgExpo **********/
+/*AlgoTSSpreadWFDAvgExpo::AlgoTSSpreadWFDAvgExpo(const InstanceTS &instance):
+    AlgoTSSpreadWFDAvg(instance)
+{ }
+
+void AlgoTSSpreadWFDAvgExpo::sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_avgexpo_size_decreasing);
+}
+
+void AlgoTSSpreadWFDAvgExpo::updateBinMeasure(BinTS* bin) { }
+
+void AlgoTSSpreadWFDAvgExpo::updateBinMeasures()
+{
+    ResourceTS factors_cpu(size_TS, 0.0);
+    ResourceTS factors_mem(size_TS, 0.0);
+
+    for(size_t i = 0; i < size_TS; ++i)
+    {
+        factors_cpu[i] = std::exp(0.01 * sum_residual_cpu[i] / (bin_cpu_capacity * bins.size())) / bin_cpu_capacity;
+        factors_mem[i] = std::exp(0.01 * sum_residual_mem[i] / (bin_mem_capacity * bins.size())) / bin_mem_capacity;
+    }
+
+    for(auto it_bin = (bins.begin()+curr_bin_index); it_bin != bins.end(); ++it_bin)
+    {
+        const ResourceTS& bin_cpu_caps = (*it_bin)->getAvailableCPUCaps();
+        const ResourceTS& bin_mem_caps = (*it_bin)->getAvailableMemCaps();
+        float measure = 0.0;
+        for(size_t i = 0; i < size_TS; ++i)
+        {
+            // For all timestep and cpu/memory
+            // measure += exp(0.01 * (sum residual capacity all bins) / (nb bins * bin capacity)) * norm residual capacity
+            // No need to normalized bin residual capaciies here because already done in factors
+            measure += factors_cpu[i] * bin_cpu_caps[i] + factors_mem[i] * bin_mem_caps[i];
+        }
+        (*it_bin)->setMeasure(measure);
+    }
+}*/
+
+
+
+/*********** Spread replicas Worst Fit Extended Sum **********/
+/*AlgoTSSpreadWFDExtendedSum::AlgoTSSpreadWFDExtendedSum(const InstanceTS &instance):
+    AlgoTSSpreadWFDAvgExpo(instance)
+{ }
+
+void AlgoTSSpreadWFDExtendedSum::sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it)
+{
+    stable_sort(first_app, end_it, application2D_comparator_extsum_size_decreasing);
+}
+
+void AlgoTSSpreadWFDExtendedSum::updateBinMeasure(BinTS* bin) { }
+
+void AlgoTSSpreadWFDExtendedSum::updateBinMeasures()
+{
+    for (auto it_bin = (bins.begin()+curr_bin_index); it_bin != bins.end(); ++it_bin)
+    {
+        const ResourceTS& bin_cpu_caps = (*it_bin)->getAvailableCPUCaps();
+        const ResourceTS& bin_mem_caps = (*it_bin)->getAvailableMemCaps();
+
+        //float measure = ((float)b->getAvailableCPUCap()) / total_residual_cpu + ((float)b->getAvailableMemCap()) / total_residual_mem;
+        float measure = 0.0;
+        for (size_t i = 0; i < size_TS; ++i)
+        {
+            measure += bin_cpu_caps[i] / sum_residual_cpu[i];
+            measure += bin_mem_caps[i] / sum_residual_mem[i];
+        }
+        (*it_bin)->setMeasure(measure);
+    }
+}*/
+
+

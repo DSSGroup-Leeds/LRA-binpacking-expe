@@ -311,4 +311,92 @@ protected:
 
 
 
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/*********** Spread replicas Worst Fit Avg **********/
+class AlgoTSSpreadWFDAvg : public AlgoFitTS
+{
+public:
+    AlgoTSSpreadWFDAvg(const InstanceTS &instance);
+
+    int solveInstanceSpread(int LB_bins, int UB_bins);
+private:
+    bool trySolve(int nb_bins); // Try to find a solution with the given bins
+
+    virtual void createBins(int nb_bins);
+    virtual void updateBinMeasure(BinTS* bin);
+    virtual void updateBinMeasures();          // If all bins need to be updated
+
+    virtual void allocateBatch(AppListTS::iterator first_app, AppListTS::iterator end_batch);
+
+    virtual void sortBins();
+    virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
+    virtual bool checkItemToBin(ApplicationTS* app, BinTS* bin) const;
+    virtual void addItemToBin(ApplicationTS* app, int replica_id, BinTS* bin);
+};
+
+/*********** Spread replicas Worst Fit Max **********/
+class AlgoTSSpreadWFDMax : public AlgoTSSpreadWFDAvg
+{
+public:
+    AlgoTSSpreadWFDMax(const InstanceTS &instance);
+
+private:
+    virtual void updateBinMeasure(BinTS* bin);
+    virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
+};
+
+/*********** Spread replicas Worst Fit Surrogate **********/
+class AlgoTSSpreadWFDSurrogate : public AlgoTSSpreadWFDAvg
+{
+public:
+    AlgoTSSpreadWFDSurrogate(const InstanceTS &instance);
+
+private:
+    virtual void createBins(int nb_bins);
+    virtual void updateBinMeasure(BinTS* bin);
+    virtual void updateBinMeasures();
+    virtual void addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin);
+    virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
+
+protected:
+    ResourceTS sum_residual_cpu;
+    ResourceTS sum_residual_mem;
+};
+
+
+/*********** Spread replicas Worst Fit AvgExpo **********/
+/*class AlgoTSSpreadWFDAvgExpo : public AlgoTSSpreadWFDSurrogate
+{
+public:
+    AlgoTSSpreadWFDAvgExpo(const InstanceTS &instance);
+
+private:
+    //virtual void createBins(int nb_bins);
+    virtual void updateBinMeasure(BinTS* bin);
+    virtual void updateBinMeasures();
+    //virtual void addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin);
+    virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
+};*/
+
+
+
+/*********** Spread replicas Worst Fit Extended Sum **********/
+/*class AlgoTSSpreadWFDExtendedSum : public AlgoTSSpreadWFDAvgExpo
+{
+public:
+    AlgoTSSpreadWFDExtendedSum(const InstanceTS &instance);
+
+private:
+    virtual void updateBinMeasure(BinTS* bin);
+    virtual void updateBinMeasures();
+    virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
+};*/
+
+AlgoTSSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const InstanceTS &instance);
+
+
 #endif // ALGOSTS_HPP
