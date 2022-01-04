@@ -100,7 +100,7 @@ AlgoFitTS* createAlgoTS(const std::string& algo_name, const InstanceTS &instance
     }
 }
 
-AlgoTSSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance)
+AlgoTSSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const InstanceTS &instance)
 {
     if (algo_name == "SpreadWFD-Avg")
     {
@@ -665,7 +665,7 @@ void AlgoTSBFDExtendedSum::updateBinMeasure(BinTS *bin)
 /* ================================================ */
 /* ================================================ */
 /************ Worst Fit Decreasing Avg Affinity *********/
-AlgoTSWFDAvg::AlgoTSWFDAvg(const Instance2D &instance):
+AlgoTSWFDAvg::AlgoTSWFDAvg(const InstanceTS &instance):
     AlgoTSBFDAvg(instance)
 { }
 
@@ -674,7 +674,7 @@ void AlgoTSWFDAvg::sortBins() {
 }
 
 /************ Worst Fit Decreasing Max Affinity *********/
-AlgoTSWFDMax::AlgoTSWFDMax(const Instance2D &instance):
+AlgoTSWFDMax::AlgoTSWFDMax(const InstanceTS &instance):
     AlgoTSBFDMax(instance)
 { }
 
@@ -684,7 +684,7 @@ void AlgoTSWFDMax::sortBins() {
 
 
 /************ Worst Fit Decreasing AvgExpo Affinity *********/
-AlgoTSWFDAvgExpo::AlgoTSWFDAvgExpo(const Instance2D &instance):
+AlgoTSWFDAvgExpo::AlgoTSWFDAvgExpo(const InstanceTS &instance):
     AlgoTSBFDAvgExpo(instance)
 { }
 
@@ -694,7 +694,7 @@ void AlgoTSWFDAvgExpo::sortBins() {
 
 
 /************ Worst Fit Decreasing Surrogate Affinity *********/
-AlgoTSWFDSurrogate::AlgoTSWFDSurrogate(const Instance2D &instance):
+AlgoTSWFDSurrogate::AlgoTSWFDSurrogate(const InstanceTS &instance):
     AlgoTSBFDSurrogate(instance)
 { }
 
@@ -704,7 +704,7 @@ void AlgoTSWFDSurrogate::sortBins() {
 
 
 /************ Worst Fit Decreasing ExtendedSum Affinity *********/
-AlgoTSWFDExtendedSum::AlgoTSWFDExtendedSum(const Instance2D &instance):
+AlgoTSWFDExtendedSum::AlgoTSWFDExtendedSum(const InstanceTS &instance):
     AlgoTSBFDExtendedSum(instance)
 { }
 
@@ -913,7 +913,7 @@ BinTS* AlgoTSBinFFDFitness::createNewBinRet()
 {
     BinTS* bin = AlgoTSBinFFDDotProduct::createNewBinRet();
 
-    for (size_t i = 0; size_t < size_TS; ++i)
+    for (size_t i = 0; i < size_TS; ++i)
     {
         sum_residual_cpu[i] += bin_cpu_capacity;
         sum_residual_mem[i] += bin_mem_capacity;
@@ -929,7 +929,7 @@ void AlgoTSBinFFDFitness::addItemToBin(ApplicationTS *app, int replica_id, BinTS
     const ResourceTS& app_cpu = app->getCpuUsage();
     const ResourceTS& app_mem = app->getMemUsage();
 
-    for (size_t i = 0; size_t < size_TS; ++i)
+    for (size_t i = 0; i < size_TS; ++i)
     {
         sum_residual_cpu[i] -= app_cpu[i];
         sum_residual_mem[i] -= app_mem[i];
@@ -1080,7 +1080,7 @@ void AlgoTSSpreadWFDAvg::createBins(int nb_bins)
     bins.reserve(nb_bins);
     for (int i = 0; i < nb_bins; ++i)
     {
-        BinTS* bin = new BinTS(i, bin_cpu_capacity, bin_mem_capacity);
+        BinTS* bin = new BinTS(i, bin_cpu_capacity, bin_mem_capacity, size_TS);
         updateBinMeasure(bin);
         bins.push_back(bin);
     }
@@ -1114,7 +1114,7 @@ void AlgoTSSpreadWFDAvg::sortBins()
 
 bool AlgoTSSpreadWFDAvg::checkItemToBin(ApplicationTS* app, BinTS* bin) const
 {
-    return (bin->doesItemFit(app->getCPUSize(), app->getMemorySize())) and (bin->isAffinityCompliant(app));
+    return (bin->doesItemFit(app)) and (bin->isAffinityCompliant(app));
 }
 
 void AlgoTSSpreadWFDAvg::addItemToBin(ApplicationTS* app, int replica_id, BinTS* bin)
@@ -1202,7 +1202,7 @@ void AlgoTSSpreadWFDSurrogate::createBins(int nb_bins)
     bins.reserve(nb_bins);
     for (int i = 0; i < nb_bins; ++i)
     {
-        BinTS* bin = new BinTS(i, bin_cpu_capacity, bin_mem_capacity);
+        BinTS* bin = new BinTS(i, bin_cpu_capacity, bin_mem_capacity, size_TS);
         bins.push_back(bin);
     }
 
