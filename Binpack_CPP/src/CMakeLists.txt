@@ -32,3 +32,14 @@ install(TARGETS main_density2D main_densityTS
     main_large2D main_largeTS
     #main_scalabilityTS
     RUNTIME DESTINATION bin)
+
+
+# For Gurobi
+find_package(GUROBI REQUIRED)
+include_directories(${GUROBI_INCLUDE_DIRS})
+#add_executable(main_gurobi main_gurobi.cpp algos/algos2D.hpp algos/algos2D.cpp lower_bounds.hpp lower_bounds.cpp linear_programs.hpp linear_programs.cpp)
+add_executable(main_gurobi main_gurobi.cpp algos/algos2D.hpp algos/algos2D.cpp lower_bounds.hpp lower_bounds.cpp)
+target_link_libraries(main_gurobi
+        PRIVATE ${GUROBI_LIBRARIES}
+        PRIVATE Binpack_lib
+)
