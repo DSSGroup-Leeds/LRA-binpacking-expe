@@ -1056,17 +1056,12 @@ int Algo2DSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
     int target_bins;
 
     // Then iteratively try to improve on the solution
-    //int nb_iter = 0;
     while(low_bound < best_sol)
     {
-        //target_bins = (low_bound + 3*best_sol)/4;
-        //target_bins = (3*low_bound + best_sol)/4;
         target_bins = (low_bound + best_sol)/2;
-        //std::cout << "Trying with " << target_bins << " bins (LB: " << low_bound  << " UB: " << best_sol<< ")" << std::endl;
 
         if (trySolve(target_bins))
         {
-
             // Update the best solution
             best_sol = target_bins;
             for (Bin2D* bin : best_bins)
@@ -1084,10 +1079,8 @@ int Algo2DSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
             // Update bound of search
             low_bound = target_bins+1;
         }
-        //nb_iter+=1;
     }
     setSolution(best_bins);
-    //std::cout << "Found best solution in " << nb_iter << " iterations" << std::endl;
     return best_sol;
 }
 

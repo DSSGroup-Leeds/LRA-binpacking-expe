@@ -148,7 +148,7 @@ int run_list_algos(string input_path, string& outfile,
 
 int main(int argc, char** argv)
 {
-    string input_path = "/nobackup/scscm/TClab_data/density_2D/";
+    string input_path = "/nobackup/scscm/TClab_data/density2D/";
     string output_path = "/nobackup/scscm/new_outputs/";
     //string input_path = "/home/mommess/Documents/Leeds_research/datasets/scheduler_trace_datasets/datasets/TClab_data/";
 
@@ -199,9 +199,9 @@ int main(int argc, char** argv)
     vector<string> list_spread = {
         "SpreadWFD-Avg",
         "SpreadWFD-Max",
-        "SpreadWFD-AvgExpo",
+        //"SpreadWFD-AvgExpo",
         "SpreadWFD-Surrogate",
-        "SpreadWFD-ExtendedSum",
+        //"SpreadWFD-ExtendedSum",
     };
 
     run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, density);
