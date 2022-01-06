@@ -72,9 +72,16 @@ GRBModel generate_ILP_2D(GRBEnv env, const Instance2D &instance,
     GRBVar* zvars = model.addVars(nb_bins*nb_items, GRB_BINARY);
     // Index of var[j,i] is j * nb_bins + i (computed via function get_tab_index)
 
+    int n = 0;
+
     GRBLinExpr objective = 0;
     for (int i = 0; i < nb_bins; ++i)
     {
+        if ( (i%20) == 0)
+        {
+            std::cout << "Bin: " << i << " constraints: " << n << std::endl;
+        }
+
         objective += yvars[i];
 
         // Constraint bin capacity
@@ -92,6 +99,7 @@ GRBModel generate_ILP_2D(GRBEnv env, const Instance2D &instance,
             int ceil_mem_value = ceil(bin_mem_capacity / (item->getMemorySize()));
             int max_rep_j = std::min(item->getNbReplicas(), std::min(ceil_cpu_value, ceil_mem_value));
             model.addConstr(rvars[get_tab_index(j,i,nb_bins)] <= max_rep_j * zvars[get_tab_index(j,i,nb_bins)], "(4)");
+            n++;
 
             // Constraints on affinities of other items
             for (auto it_k : item->getAffinityOutMap())
@@ -105,10 +113,12 @@ GRBModel generate_ILP_2D(GRBEnv env, const Instance2D &instance,
                 int max_rep_k = std::min(item_k->getNbReplicas(), std::min(ceil_cpu_value_k, ceil_mem_value_k));
 
                 model.addConstr(rvars[get_tab_index(item_k->getInternalId(), i, nb_bins)] <= max_rep_k*(1-zvars[get_tab_index(j, i, nb_bins)]) + ((it_k.second) * zvars[get_tab_index(j,i,nb_bins)]) , "(5)");
+                n++;
             }
         }
         model.addConstr(bin_cpu_cap_i <= bin_cpu_capacity * yvars[i], "(3)");
         model.addConstr(bin_mem_cap_i <= bin_mem_capacity * yvars[i], "(3')");
+        n+=2;
     }
 
     // Constraints for all replicas allocated
@@ -160,6 +170,10 @@ GRBModel generate_ILP_2D_noaff(GRBEnv env, const Instance2D &instance,
     GRBLinExpr objective = 0;
     for (int i = 0; i < nb_bins; ++i)
     {
+        if ( (i%200) == 0)
+        {
+            std::cout << "Bin: " << i << std::endl;
+        }
         objective += yvars[i];
 
         // Constraint bin capacity
@@ -262,17 +276,17 @@ int main(int argc, char** argv)
         //env.set("LogFile", 0);
         //env.set("OutputFlag", "0"); // To shut down all logs (LogFile + LogToConsole)
         env.set("DisplayInterval", "600");
-        env.set("Threads", "4");
-        env.set("Method", "3");
+        //env.set("Threads", "4");
+        //env.set("Method", "3");
         env.set("TimeLimit", time_limit);
         env.start();
 
-        //string instance_name(graph_class + "_d" + to_string(density) + "_" + to_string(n));
         string instance_name = "arbitrary_d1_0";
         string infile(input_path + instance_name + ".csv");
-        //string infile("/home/mommess/Documents/Leeds_research/datasets/scheduler_trace_datasets/datasets/TClab_data/apps_1000/dataset_1000_0.csv");
-        //string infile("/home/mommess/Documents/Leeds_research/datasets/scheduler_trace_datasets/datasets/TClab_data/application_dataset_full.csv");
-        
+
+        //string instance_name = "dataset_2500_1";
+        //string infile(input_path + "../" + instance_name + ".csv");
+
         const Instance2D instance(instance_name, bin_cpu_capacity, bin_mem_capacity, infile);
 
         cout << "Total replicas: " << instance.getTotalReplicas() << endl;
@@ -287,8 +301,8 @@ int main(int argc, char** argv)
 
         // Solving ILP with Gurobi
         auto start = high_resolution_clock::now();
-        GRBModel model = generate_ILP_2D_noaff(env, instance, bin_cpu_capacity, bin_mem_capacity, ILP_nb_bins);
-        //GRBModel model = generate_ILP_2D(env, instance, bin_cpu_capacity, bin_mem_capacity, ILP_nb_bins);
+        //GRBModel model = generate_ILP_2D_noaff(env, instance, bin_cpu_capacity, bin_mem_capacity, ILP_nb_bins);
+        GRBModel model = generate_ILP_2D(env, instance, bin_cpu_capacity, bin_mem_capacity, ILP_nb_bins);
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<seconds>(stop - start);
 
