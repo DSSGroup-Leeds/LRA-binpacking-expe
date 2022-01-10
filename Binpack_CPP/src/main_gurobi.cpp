@@ -77,7 +77,7 @@ GRBModel generate_ILP_2D(GRBEnv env, const Instance2D &instance,
     GRBLinExpr objective = 0;
     for (int i = 0; i < nb_bins; ++i)
     {
-        if ( (i%20) == 0)
+        if ( (i%100) == 0)
         {
             std::cout << "Bin: " << i << " constraints: " << n << std::endl;
         }
@@ -170,9 +170,9 @@ GRBModel generate_ILP_2D_noaff(GRBEnv env, const Instance2D &instance,
     GRBLinExpr objective = 0;
     for (int i = 0; i < nb_bins; ++i)
     {
-        if ( (i%200) == 0)
+        if ( (i%100) == 0)
         {
-            std::cout << "Bin: " << i << std::endl;
+            std::cout << "Bin: " << i << " constraints: " << n << std::endl;
         }
         objective += yvars[i];
 
@@ -250,6 +250,11 @@ int main(int argc, char** argv)
 
     int bin_cpu_capacity = 64;
     int bin_mem_capacity = 128;
+    int max_size = 100000;
+    if (argc > 1)
+    {
+        max_size = atoi(argv[1]);
+    }
     /*int density;
     if (argc > 3)
     {
@@ -268,7 +273,7 @@ int main(int argc, char** argv)
         return -1;
     }*/
 
-    string time_limit("7200");
+    string time_limit("14400");
     cout << "Gurobi time limit is " << time_limit << " seconds" << endl;
 
     try {
@@ -281,14 +286,16 @@ int main(int argc, char** argv)
         env.set("TimeLimit", time_limit);
         env.start();
 
-        string instance_name = "arbitrary_d1_0";
-        string infile(input_path + instance_name + ".csv");
+        //string instance_name = "arbitrary_d1_0";
+        //string infile(input_path + instance_name + ".csv");
 
+        string instance_name = "full_dataset2D";
         //string instance_name = "dataset_2500_1";
-        //string infile(input_path + "../" + instance_name + ".csv");
+        string infile(input_path + "../" + instance_name + ".csv");
 
-        const Instance2D instance(instance_name, bin_cpu_capacity, bin_mem_capacity, infile);
+        const Instance2D instance(instance_name, bin_cpu_capacity, bin_mem_capacity, infile, max_size);
 
+        cout << "Total apps: " << instance.getApps().size() << endl;
         cout << "Total replicas: " << instance.getTotalReplicas() << endl;
 
         int LB = BPP2D_LB(instance);
@@ -311,7 +318,7 @@ int main(int argc, char** argv)
         float time;
         int best_bound, obj_value;
         solve_model(model, time, obj_value, best_bound);
-
+        cout << "Obj: " << obj_value << " best bound: " << best_bound << " time: " << time << endl;
     } catch(GRBException e) {
         cout << "Error code = " << e.getErrorCode() << endl;
         cout << e.getMessage() << endl;

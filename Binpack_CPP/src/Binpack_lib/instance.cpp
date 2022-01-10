@@ -35,7 +35,7 @@ AffinityMap constructAffinitiyMap(std::string& aff_str)
 
 
 Instance2D::Instance2D(std::string id, int bin_cpu_capacity, int bin_memory_capacity,
-                       std::string& filename)
+                       std::string& filename, int max_size)
 {
     this->id = id;
     this->bin_cpu_capacity = bin_cpu_capacity;
@@ -63,7 +63,7 @@ Instance2D::Instance2D(std::string id, int bin_cpu_capacity, int bin_memory_capa
     while(reader.read_row(app_id, nb_rep, nb_cpus, nb_memory, degree, aff_str))
     {
         // Make sure the replicas can be allocated to bins
-        if ( (nb_cpus <= bin_cpu_capacity) and (nb_memory <= bin_memory_capacity) )
+        if ( (nb_cpus <= bin_cpu_capacity) and (nb_memory <= bin_memory_capacity) and (internal_id < max_size))
         {
             // Retrieve the map of affinities from the affinity string
             AffinityMap aff_map_out = constructAffinitiyMap(aff_str);

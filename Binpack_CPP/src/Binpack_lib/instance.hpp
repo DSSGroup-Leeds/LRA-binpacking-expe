@@ -12,7 +12,7 @@ class Instance2D
 {
 public:
     Instance2D(std::string id, int bin_cpu_capacity, int bin_memory_capacity,
-               std::string& filename);
+               std::string& filename, int max_size);
 
     virtual ~Instance2D();
 
