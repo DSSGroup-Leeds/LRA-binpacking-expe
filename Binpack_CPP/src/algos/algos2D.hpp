@@ -335,9 +335,9 @@ class Algo2DSpreadWFDAvg : public AlgoFit2D
 public:
     Algo2DSpreadWFDAvg(const Instance2D &instance);
 
-    int solveInstanceSpread(int LB_bins, int UB_bins);
-private:
+    virtual int solveInstanceSpread(int LB_bins, int UB_bins);
     bool trySolve(int nb_bins); // Try to find a solution with the given bins
+private:
 
     virtual void createBins(int nb_bins);
     virtual void updateBinMeasure(Bin2D* bin);
@@ -405,6 +405,27 @@ private:
     virtual void updateBinMeasures();
     virtual void sortApps(AppList2D::iterator first_app, AppList2D::iterator end_it);
 };
+
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/**** A variant of SpreadWFD algorithms *************/
+class Algo2DRefineWFDAvg : public Algo2DSpreadWFDAvg
+{
+public:
+    Algo2DRefineWFDAvg(const Instance2D &instance, const float ratio);
+
+protected:
+    virtual int solveInstanceSpread(int LB_bins, int UB_bins);
+
+private:
+    float ratio_refinement;
+};
+
+
+
 
 Algo2DSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const Instance2D &instance);
 

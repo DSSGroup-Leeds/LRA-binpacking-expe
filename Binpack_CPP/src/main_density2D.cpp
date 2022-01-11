@@ -55,7 +55,10 @@ std::string run_for_instance(const Instance2D & instance,
 
     row.append("\t"+to_string(best_sol));
 
-    int UB = best_sol;
+    // Always take solution of FirstFit as upper bound input
+    AlgoFit2D* algoFF = createAlgo2D("FF", instance);
+    int UB = algoFF->solveInstance(hint_bin);
+    //int UB = best_sol;
     for (const string & algo_name : list_spread)
     {
         Algo2DSpreadWFDAvg * algo = createSpreadAlgo(algo_name, instance);
@@ -167,15 +170,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    //string input_path(data_path+"/input/");
-    //string output_path(data_path+"/results/");
-    //string input_path(data_path+"large_scale/large_2D/");
-    //string outfile("test.csv");
-
     string outfile(output_path + "density2D_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(density) + ".csv");
 
     vector<string> list_algos = {
-        "FF",
+        /*"FF",
         "FFD-Degree",
 
         "FFD-Avg", "FFD-Max",
@@ -192,16 +190,19 @@ int main(int argc, char** argv)
 
         "NCD-L2Norm",
         "NCD-DotProduct", "NCD-Fitness",
-        "NCD-DotDivision",
+        "NCD-DotDivision",*/
         //"NodeCount",
     };
 
     vector<string> list_spread = {
-        "SpreadWFD-Avg",
+        /*"SpreadWFD-Avg",
         "SpreadWFD-Max",
+        "SpreadWFD-Surrogate",*/
         //"SpreadWFD-AvgExpo",
-        "SpreadWFD-Surrogate",
         //"SpreadWFD-ExtendedSum",
+        "RefineWFD-Avg-5",
+        "RefineWFD-Avg-3",
+        "RefineWFD-Avg-2",
     };
 
     run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, density);
