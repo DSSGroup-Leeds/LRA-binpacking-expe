@@ -11,14 +11,19 @@ using namespace std;
 using namespace std::chrono;
 
 
-std::string run_for_instance(const InstanceTS & instance, const vector<string> & list_algos)
+std::string run_for_instance(const InstanceTS & instance,
+                             const vector<string> & list_algos)
 {
     int LB_cpu, LB_mem;
     TS_LB(instance, LB_cpu, LB_mem);
     int LB = std::max(LB_cpu, LB_mem);
     int hint_bin = LB + 500;
 
+    int best_sol = instance.getTotalReplicas();
+    string best_algo;
+
     string row(to_string(LB));
+    string row_res;
     string row_time;
 
     int sol;
@@ -30,12 +35,18 @@ std::string run_for_instance(const InstanceTS & instance, const vector<string> &
             auto start = high_resolution_clock::now();
             sol = algo->solveInstance(hint_bin);
             auto stop = high_resolution_clock::now();
-            auto duration = duration_cast<milliseconds>(stop - start);
+            auto duration = duration_cast<seconds>(stop - start);
 
-            row.append("\t" + to_string(sol));
-            row_time.append("\t" + to_string((float)duration.count() / 1000));
+            if (sol < best_sol)
+            {
+                best_sol = sol;
+                best_algo = algo_name;
+            }
 
-            cout << algo_name << " " << to_string(sol) << " " << to_string((float)duration.count() / 1000) << endl;
+            row_res.append("\t" + to_string(sol));
+            row_time.append("\t" + to_string((float)duration.count()));
+
+            cout << algo_name << " " << to_string(sol) << " " << to_string((float)duration.count()) << endl;
 
             delete algo;
         }
@@ -45,12 +56,16 @@ std::string run_for_instance(const InstanceTS & instance, const vector<string> &
         }
     }
 
-    row.append(row_time);
-    return row;
+    row.append("\t"+to_string(best_sol) + "\t" + best_algo);
+    //row.append(row_time);
+    return row + row_res + row_time;
 }
 
 
-int run_list_algos(string input_path, string& outfile, vector<string>& list_algos, int bin_cpu_capacity, int bin_mem_capacity)
+int run_list_algos(string input_path, string& outfile,
+                   vector<string>& list_algos,
+                   int bin_cpu_capacity, int bin_mem_capacity,
+                   int ssize, string graph)
 {
     ofstream f(outfile, ios_base::trunc);
     if (!f.is_open())
@@ -61,7 +76,7 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
     cout << "Writing output to file " << outfile << endl;
 
     // Header line
-    string header("instance_name\tLB");
+    string header("instance_name\tLB\tbest_sol\tbest_algo");
     string time_header;
 
     for (std::string algo_name : list_algos)
@@ -72,8 +87,10 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
     f << header << time_header << "\n";
 
     vector<string> densities = { "005"};
-    vector<int> sizes = { 10000, 50000, 100000 };
-    vector<string> graph_classes = { "arbitrary", "normal", "threshold" };
+    vector<int> sizes;// = { 10000, 50000, 100000 };
+    sizes.push_back(ssize);
+    vector<string> graph_classes;// = { "arbitrary", "normal", "threshold" };
+    graph_classes.push_back(graph);
 
     size_t size_series = 98;
 
@@ -106,34 +123,36 @@ int run_list_algos(string input_path, string& outfile, vector<string>& list_algo
 
 int main(int argc, char** argv)
 {
-    string data_path;
+    string input_path = "/nobackup/scscm/TClab_data/largeTS/";
+    string output_path = "/nobackup/scscm/output/";
 
     int bin_cpu_capacity;
     int bin_mem_capacity;
-    if (argc > 3)
+    int size;
+    string graph;
+    if (argc > 4)
     {
         bin_cpu_capacity = stoi(argv[1]);
         bin_mem_capacity = stoi(argv[2]);
-        data_path = argv[3];
+        size = stoi(argv[3]);
+        graph = argv[4];
     }
     else
     {
-        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <data_path>" << endl;
+        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <size> <graph_class>" << endl;
         return -1;
     }
 
-    string input_path(data_path+"/input/");
-    string output_path(data_path+"/results/");
-
-    string outfile(output_path + "largeTS_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + ".csv");
+    string outfile(output_path + "largeTS_" + graph + "_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(size) + ".csv");
+    //string outfile(output_path + "largeTS_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + ".csv");
 
     vector<string> list_algos = {
         "FF", "FFD-Degree",
-
-        "FFD-Avg", "BFD-Avg",
+        "BFD-Avg",
+        "WFD-AvgExpo",
     };
 
-    run_list_algos(input_path, outfile, list_algos, bin_cpu_capacity, bin_mem_capacity);
+    run_list_algos(input_path, outfile, list_algos, bin_cpu_capacity, bin_mem_capacity, size, graph);
 
     return 0;
 }
