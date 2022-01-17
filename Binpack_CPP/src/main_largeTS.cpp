@@ -12,7 +12,8 @@ using namespace std::chrono;
 
 
 std::string run_for_instance(const InstanceTS & instance,
-                             const vector<string> & list_algos)
+                             const vector<string> & list_algos,
+                             const vector<string> & list_spread)
 {
     int LB_cpu, LB_mem;
     TS_LB(instance, LB_cpu, LB_mem);
@@ -56,14 +57,43 @@ std::string run_for_instance(const InstanceTS & instance,
         }
     }
 
+    row.append("\t"+to_string(best_sol));
+
+    int UB = best_sol;
+    for (const string & algo_name : list_spread)
+    {
+        AlgoTSSpreadWFDAvg * algo = createSpreadAlgo(algo_name, instance);
+        if (algo != nullptr)
+        {
+            auto start = high_resolution_clock::now();
+            sol = algo->solveInstanceSpread(LB, UB);
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<seconds>(stop - start);
+
+            if ((sol < best_sol) and (sol != -1))
+            {
+                best_sol = sol;
+                best_algo = algo_name;
+            }
+
+            row_res.append("\t" + to_string(sol));
+            row_time.append("\t" + to_string((float)duration.count()));
+
+            delete algo;
+        }
+        else
+        {
+            cout << "Unknown algo name: " << algo_name << endl;
+        }
+    }
+
     row.append("\t"+to_string(best_sol) + "\t" + best_algo);
-    //row.append(row_time);
     return row + row_res + row_time;
 }
 
 
 int run_list_algos(string input_path, string& outfile,
-                   vector<string>& list_algos,
+                   vector<string>& list_algos, vector<string>& list_spread,
                    int bin_cpu_capacity, int bin_mem_capacity,
                    int ssize, string graph)
 {
@@ -108,7 +138,7 @@ int run_list_algos(string input_path, string& outfile,
                     string infile(input_path + instance_name + ".csv");
                     const InstanceTS instance(instance_name, bin_cpu_capacity, bin_mem_capacity, infile, size_series);
 
-                    string row_str = run_for_instance(instance, list_algos);
+                    string row_str = run_for_instance(instance, list_algos, list_spread);
                     f << instance_name << "\t" << row_str << "\n";
                     f.flush();
                 }
@@ -144,15 +174,19 @@ int main(int argc, char** argv)
     }
 
     string outfile(output_path + "largeTS_" + graph + "_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(size) + ".csv");
-    //string outfile(output_path + "largeTS_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + ".csv");
 
     vector<string> list_algos = {
-        "FF", "FFD-Degree",
-        "BFD-Avg",
-        "WFD-AvgExpo",
+        "FF",
+        //"FFD-Degree",
+        //"BFD-Avg",
+        //"WFD-AvgExpo",
     };
 
-    run_list_algos(input_path, outfile, list_algos, bin_cpu_capacity, bin_mem_capacity, size, graph);
+    vector<string> list_spread = {
+        "SpreadWFD-Avg"
+    };
+
+    run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, size, graph);
 
     return 0;
 }
