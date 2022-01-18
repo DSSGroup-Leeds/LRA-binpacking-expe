@@ -57,7 +57,10 @@ std::string run_for_instance(const InstanceTS & instance,
 
     row.append("\t"+to_string(best_sol));
 
-    int UB = best_sol;
+    // Always take solution of FirstFit as upper bound input
+    AlgoFitTS* algoFF = createAlgoTS("FF", instance);
+    int UB = algoFF->solveInstance(hint_bin);
+    delete algoFF;
     for (const string & algo_name : list_spread)
     {
         AlgoTSSpreadWFDAvg * algo = createSpreadAlgo(algo_name, instance);
@@ -176,7 +179,7 @@ int main(int argc, char** argv)
     string outfile(output_path + "densityTS_" + graph + "_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(density) + ".csv");
 
     vector<string> list_algos = {
-        "FF", "FFD-Degree",
+        /*"FF", "FFD-Degree",
 
         "FFD-Avg", "FFD-Max",
         "FFD-AvgExpo", "FFD-Surrogate",
@@ -192,15 +195,16 @@ int main(int argc, char** argv)
 
         "NCD-L2Norm",
         "NCD-DotProduct", "NCD-Fitness",
-        "NCD-DotDivision",
+        "NCD-DotDivision",*/
     };
 
     vector<string> list_spread = {
-        "SpreadWFD-Avg",
+        /*"SpreadWFD-Avg",
         "SpreadWFD-Max",
-        "SpreadWFD-Surrogate",
+        "SpreadWFD-Surrogate",*/
         //"SpreadWFD-AvgExpo",
         //"SpreadWFD-ExtendedSum",
+        "RefineWFD-Avg-2",
     };
 
     run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, density, graph);

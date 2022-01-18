@@ -59,7 +59,6 @@ std::string run_for_instance(const Instance2D & instance,
     AlgoFit2D* algoFF = createAlgo2D("FF", instance);
     int UB = algoFF->solveInstance(hint_bin);
     delete algoFF;
-    //int UB = best_sol;
     for (const string & algo_name : list_spread)
     {
         Algo2DSpreadWFDAvg * algo = createSpreadAlgo(algo_name, instance);

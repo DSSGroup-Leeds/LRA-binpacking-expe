@@ -323,8 +323,8 @@ public:
     AlgoTSSpreadWFDAvg(const InstanceTS &instance);
 
     int solveInstanceSpread(int LB_bins, int UB_bins);
-private:
     bool trySolve(int nb_bins); // Try to find a solution with the given bins
+private:
 
     virtual void createBins(int nb_bins);
     virtual void updateBinMeasure(BinTS* bin);
@@ -395,6 +395,26 @@ private:
     virtual void updateBinMeasures();
     virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
 };*/
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/**** A variant of SpreadWFD algorithms *************/
+class AlgoTSRefineWFDAvg : public AlgoTSSpreadWFDAvg
+{
+public:
+    AlgoTSRefineWFDAvg(const InstanceTS &instance, const float ratio);
+
+protected:
+    virtual int solveInstanceSpread(int LB_bins, int UB_bins);
+
+private:
+    float ratio_refinement;
+};
+
+
+
 
 AlgoTSSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const InstanceTS &instance);
 

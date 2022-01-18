@@ -59,7 +59,10 @@ std::string run_for_instance(const InstanceTS & instance,
 
     row.append("\t"+to_string(best_sol));
 
-    int UB = best_sol;
+    // Always take solution of FirstFit as upper bound input
+    AlgoFitTS* algoFF = createAlgoTS("FF", instance);
+    int UB = algoFF->solveInstance(hint_bin);
+    delete algoFF;
     for (const string & algo_name : list_spread)
     {
         AlgoTSSpreadWFDAvg * algo = createSpreadAlgo(algo_name, instance);

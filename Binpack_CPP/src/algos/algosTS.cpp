@@ -122,6 +122,20 @@ AlgoTSSpreadWFDAvg* createSpreadAlgo(const std::string &algo_name, const Instanc
     {
         return new AlgoTSSpreadWFDExtendedSum(instance);
     }*/
+
+    else if (algo_name == "RefineWFD-Avg-5")
+    {
+        return new AlgoTSRefineWFDAvg(instance, 0.05);
+    }
+    else if (algo_name == "RefineWFD-Avg-3")
+    {
+        return new AlgoTSRefineWFDAvg(instance, 0.03);
+    }
+    else if (algo_name == "RefineWFD-Avg-2")
+    {
+        return new AlgoTSRefineWFDAvg(instance, 0.02);
+    }
+
     else
     {
         return nullptr; // This should never happen
@@ -1300,4 +1314,77 @@ void AlgoTSSpreadWFDExtendedSum::updateBinMeasures()
     }
 }*/
 
+
+
+/* ================================================ */
+/* ================================================ */
+/* ================================================ */
+/**** A variant of SpreadWFD algorithms *************/
+AlgoTSRefineWFDAvg::AlgoTSRefineWFDAvg(const InstanceTS &instance, const float ratio):
+    AlgoTSSpreadWFDAvg(instance),
+    ratio_refinement(ratio)
+{ }
+
+int AlgoTSRefineWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
+{
+    int refine_step = (int)(std::ceil(LB_bins * ratio_refinement));
+    int best_sol = -1;
+    if (refine_step < 1 )
+    {
+        refine_step = 1; // Just a simple guard to be sure
+    }
+
+    // First, try to find a solution with UB_bins
+    if (!trySolve(UB_bins))
+    {
+        // This may be not usefull if value of UB comes from a WFD algorithm?
+
+        // If no solution found, refine values of LB and increase UB
+        bool sol_found = false;
+        while (!sol_found)
+        {
+            LB_bins = UB_bins+1; // No solution was found, UB+1 is a new lower bound
+            UB_bins += refine_step+1; // +1 to be in par with the +1 of LB
+
+            sol_found = trySolve(UB_bins);
+        }
+        best_sol = UB_bins;
+    }
+    else
+    {
+        // Try to refine the solution with small steps
+        BinListTS best_bins = getBinsCopy();
+        best_sol = UB_bins;
+        int target_bins;
+
+        while(LB_bins < best_sol)
+        {
+            //UB_bins = UB_bins - refine_step;
+            target_bins = best_sol - refine_step;
+
+            if (trySolve(target_bins))
+            {
+                // Update the best solution
+                best_sol = target_bins;
+                //UB_bins = target_bins;
+                for (BinTS* bin : best_bins)
+                {
+                    if (bin != nullptr)
+                    {
+                        delete bin;
+                    }
+                }
+                best_bins.clear();
+                best_bins = getBinsCopy();
+            }
+            else
+            {
+                // Did not find feasible solution with target_bins
+                break;
+            }
+        }
+        setSolution(best_bins);
+    }
+    return best_sol;
+}
 
