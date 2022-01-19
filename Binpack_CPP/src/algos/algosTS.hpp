@@ -322,7 +322,7 @@ class AlgoTSSpreadWFDAvg : public AlgoFitTS
 public:
     AlgoTSSpreadWFDAvg(const InstanceTS &instance);
 
-    int solveInstanceSpread(int LB_bins, int UB_bins);
+    virtual int solveInstanceSpread(int LB_bins, int UB_bins);
     bool trySolve(int nb_bins); // Try to find a solution with the given bins
 private:
 

@@ -117,6 +117,11 @@ int run_list_algos(string input_path, string& outfile,
         header.append("\t" + algo_name);
         time_header.append("\t" + algo_name + "_time");
     }
+    for (std::string algo_name : list_spread)
+    {
+        header.append("\t" + algo_name);
+        time_header.append("\t" + algo_name + "_time");
+    }
     f << header << time_header << "\n";
 
     vector<string> densities = { "005"};
