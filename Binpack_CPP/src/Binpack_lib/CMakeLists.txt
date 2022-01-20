@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 project("Binpack_lib")
 
 set(HEADER_FILES
-	bins.hpp
+    bins.hpp
     application.hpp
     instance.hpp
 
@@ -10,9 +10,9 @@ set(HEADER_FILES
 )
 
 set(SOURCE_FILES
-	bins.cpp
-	application.cpp
-	instance.cpp
+    bins.cpp
+    application.cpp
+    instance.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${HEADER_FILES} ${SOURCE_FILES})

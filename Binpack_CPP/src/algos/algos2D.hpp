@@ -336,6 +336,7 @@ public:
     Algo2DSpreadWFDAvg(const Instance2D &instance);
 
     virtual int solveInstanceSpread(int LB_bins, int UB_bins);
+protected:
     bool trySolve(int nb_bins); // Try to find a solution with the given bins
 private:
 
@@ -417,7 +418,6 @@ class Algo2DRefineWFDAvg : public Algo2DSpreadWFDAvg
 public:
     Algo2DRefineWFDAvg(const Instance2D &instance, const float ratio);
 
-protected:
     virtual int solveInstanceSpread(int LB_bins, int UB_bins);
 
 private:

@@ -56,10 +56,10 @@ def main():
     pop_replicas, wei_replicas = get_replicas_distrib(filename_2D)
 
     print("Generating large scale instances for 2D")
-    generate_from_df(df_2D, output_path/"large_2D", pop_replicas, wei_replicas)
+    generate_from_df(df_2D, output_path/"large2D", pop_replicas, wei_replicas)
 
     print("Generating large scale instances for TS")
-    generate_from_df(df_TS, output_path/"large_TS", pop_replicas, wei_replicas)
+    generate_from_df(df_TS, output_path/"largeTS", pop_replicas, wei_replicas)
 # End main function
 
 

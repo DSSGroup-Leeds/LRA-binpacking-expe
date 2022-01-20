@@ -26,11 +26,11 @@ def main():
 
     print("Generating high degree instances for 2D")
     base_df = load_dataset(filename_2D, isTS=False)
-    generate_from_df(base_df, output_path/"density_2D")
+    generate_from_df(base_df, output_path/"density2D")
 
     print("Generating high degree instances for TS")
     base_df = load_dataset(filename_TS, isTS=True)
-    generate_from_df(base_df, output_path/"density_TS")
+    generate_from_df(base_df, output_path/"densityTS")
 # End main function
 
 
@@ -45,7 +45,7 @@ def generate_from_df(base_df, output_path):
 
     for int_d in densities:
         d = int_d / 100.0
-        print(f"Density {d}: ")
+        print(f"Density {d}%: ")
 
         s = ""
         for i in instances:

@@ -1,7 +1,7 @@
 #include "application.hpp"
 #include "instance.hpp"
 #include "lower_bounds.hpp"
-#include "../algos/algosTS.hpp"
+#include "algos/algosTS.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -55,8 +55,6 @@ std::string run_for_instance(const InstanceTS & instance,
         }
     }
 
-    row.append("\t"+to_string(best_sol));
-
     // Always take solution of FirstFit as upper bound input
     AlgoFitTS* algoFF = createAlgoTS("FF", instance);
     int UB = algoFF->solveInstance(hint_bin);
@@ -96,7 +94,7 @@ std::string run_for_instance(const InstanceTS & instance,
 int run_list_algos(string input_path, string& outfile,
                    vector<string>& list_algos, vector<string>& list_spread,
                    int bin_cpu_capacity, int bin_mem_capacity,
-                   int density, string graph)
+                   int density)
 {
     ofstream f(outfile, ios_base::trunc);
     if (!f.is_open())
@@ -107,7 +105,7 @@ int run_list_algos(string input_path, string& outfile,
     cout << "Writing output to file " << outfile << endl;
 
     // Header line
-    string header("instance_name\tLB\tbest_sol\tbest_spread\tbest_algo");
+    string header("instance_name\tLB\tbest_sol\tbest_algo");
     string time_header;
 
     for (std::string algo_name : list_algos)
@@ -124,8 +122,7 @@ int run_list_algos(string input_path, string& outfile,
 
     vector<int> densities;// = { 1, 5, 10 };
     densities.push_back(density);
-    vector<string> graph_classes;// = { "arbitrary", "normal", "threshold" };
-    graph_classes.push_back(graph);
+    vector<string> graph_classes = { "arbitrary", "normal", "threshold" };
 
     size_t size_series = 98;
 
@@ -156,61 +153,51 @@ int run_list_algos(string input_path, string& outfile,
 
 int main(int argc, char** argv)
 {
-    string input_path = "/nobackup/scscm/TClab_data/densityTS/";
-    string output_path = "/nobackup/scscm/new_outputs/";
-
     int bin_cpu_capacity;
     int bin_mem_capacity;
+    string data_path;
     int density;
-    string graph;
     if (argc > 4)
     {
         bin_cpu_capacity = stoi(argv[1]);
         bin_mem_capacity = stoi(argv[2]);
-        density = stoi(argv[3]);
-        graph = argv[4];
+        data_path = argv[3];
+        density = stoi(argv[4]);
     }
     else
     {
-        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <density> <graph_class>" << endl;
+        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <data_path> <density>" << endl;
         return -1;
     }
 
-    string outfile(output_path + "densityTS_" + graph + "_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(density) + ".csv");
+    string input_path = data_path + "/input/densityTS/";
+    string outfile(data_path + "/results/densityTS_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(density) + ".csv");
 
     vector<string> list_algos = {
-        /*"FF", "FFD-Degree",
+        // Only keep algos in paper plots
+        "FF", "FFD-Degree",
 
-        "FFD-Avg", "FFD-Max",
-        "FFD-AvgExpo", "FFD-Surrogate",
-        "FFD-ExtendedSum",
+        //"FFD-Avg", "FFD-Max",
+        //"FFD-AvgExpo", "FFD-Surrogate",
 
-        "BFD-Avg", "BFD-Max",
-        "BFD-AvgExpo", "BFD-Surrogate",
-        "BFD-ExtendedSum",
+        "BFD-Avg", //"BFD-Max",
+        //"BFD-AvgExpo", "BFD-Surrogate",
 
-        "WFD-Avg", "WFD-Max",
-        "WFD-AvgExpo", "WFD-Surrogate",
-        "WFD-ExtendedSum",
-
-        "NCD-L2Norm",
-        "NCD-DotProduct", "NCD-Fitness",
-        "NCD-DotDivision",*/
+        //"WFD-Avg", "WFD-Max",
+        "WFD-AvgExpo", //"WFD-Surrogate",
     };
 
     vector<string> list_spread = {
-        /*"SpreadWFD-Avg",
-        "SpreadWFD-Max",
-        "SpreadWFD-Surrogate",*/
-        //"SpreadWFD-AvgExpo",
-        //"SpreadWFD-ExtendedSum",
+        "SpreadWFD-Avg",
+        /*"SpreadWFD-Max",
+        "SpreadWFD-Surrogate",
         "RefineWFD-Avg-2",
+        "RefineWFD-Avg-3",
+        "RefineWFD-Avg-5",*/
     };
 
-    run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, density, graph);
+    run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, density);
 
     std::cout << "Run successful!" << std::endl;
     return 0;
 }
-
-

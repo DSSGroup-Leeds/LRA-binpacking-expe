@@ -199,8 +199,6 @@ public:
 private:
     virtual void sortApps(AppListTS::iterator first_app, AppListTS::iterator end_it);
     virtual void sortBins();
-    //virtual void createNewBin();
-    //virtual void addItemToBin(ApplicationTS *app, int replica_id, BinTS *bin);
     virtual void updateBinMeasure(BinTS* bin);
 };
 
@@ -323,6 +321,7 @@ public:
     AlgoTSSpreadWFDAvg(const InstanceTS &instance);
 
     virtual int solveInstanceSpread(int LB_bins, int UB_bins);
+protected:
     bool trySolve(int nb_bins); // Try to find a solution with the given bins
 private:
 
@@ -406,7 +405,6 @@ class AlgoTSRefineWFDAvg : public AlgoTSSpreadWFDAvg
 public:
     AlgoTSRefineWFDAvg(const InstanceTS &instance, const float ratio);
 
-protected:
     virtual int solveInstanceSpread(int LB_bins, int UB_bins);
 
 private:

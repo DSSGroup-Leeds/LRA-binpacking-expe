@@ -20,15 +20,7 @@ target_link_libraries(main_large2D PRIVATE Binpack_lib)
 add_executable(main_largeTS main_largeTS.cpp lower_bounds.hpp algos/algosTS.hpp lower_bounds.cpp algos/algosTS.cpp)
 target_link_libraries(main_largeTS PRIVATE Binpack_lib)
 
-# expes for TS scalability
-#add_executable(main_scalabilityTS main_scalabilityTS.cpp lower_bounds.hpp algos/algosTS.hpp lower_bounds.cpp algos/algosTS.cpp)
-#target_link_libraries(main_scalabilityTS PRIVATE Binpack_lib)
-
-# expes for TS density with batches of apps
-# add_executable(main_batchTS main_batchTS.cpp lower_bounds.hpp algos/algosTS.hpp lower_bounds.cpp algos/algosTS.cpp)
-# target_link_libraries(main_batchTS PRIVATE Binpack_lib)
 
 install(TARGETS main_density2D main_densityTS
     main_large2D main_largeTS
-    #main_scalabilityTS
     RUNTIME DESTINATION bin)

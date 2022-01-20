@@ -1,7 +1,7 @@
 #include "application.hpp"
 #include "instance.hpp"
 #include "lower_bounds.hpp"
-#include "../algos/algosTS.hpp"
+#include "algos/algosTS.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -47,8 +47,6 @@ std::string run_for_instance(const InstanceTS & instance,
             row_res.append("\t" + to_string(sol));
             row_time.append("\t" + to_string((float)duration.count()));
 
-            cout << algo_name << " " << to_string(sol) << " " << to_string((float)duration.count()) << endl;
-
             delete algo;
         }
         else
@@ -56,8 +54,6 @@ std::string run_for_instance(const InstanceTS & instance,
             cout << "Unknown algo name: " << algo_name << endl;
         }
     }
-
-    row.append("\t"+to_string(best_sol));
 
     // Always take solution of FirstFit as upper bound input
     AlgoFitTS* algoFF = createAlgoTS("FF", instance);
@@ -98,7 +94,7 @@ std::string run_for_instance(const InstanceTS & instance,
 int run_list_algos(string input_path, string& outfile,
                    vector<string>& list_algos, vector<string>& list_spread,
                    int bin_cpu_capacity, int bin_mem_capacity,
-                   int ssize, string graph)
+                   int ssize)
 {
     ofstream f(outfile, ios_base::trunc);
     if (!f.is_open())
@@ -127,8 +123,7 @@ int run_list_algos(string input_path, string& outfile,
     vector<string> densities = { "005"};
     vector<int> sizes;// = { 10000, 50000, 100000 };
     sizes.push_back(ssize);
-    vector<string> graph_classes;// = { "arbitrary", "normal", "threshold" };
-    graph_classes.push_back(graph);
+    vector<string> graph_classes = { "arbitrary", "normal", "threshold" };
 
     size_t size_series = 98;
 
@@ -142,6 +137,7 @@ int run_list_algos(string input_path, string& outfile,
                 cout << "Graph class: " << graph_class << endl;
                 for (int n = 0; n < 10; ++n)
                 {
+                    cout << to_string(n) << " ";
                     string instance_name("large_scale_" + to_string(s) + "_" + graph_class + "_d" + d + "_" + to_string(n));
                     string infile(input_path + instance_name + ".csv");
                     const InstanceTS instance(instance_name, bin_cpu_capacity, bin_mem_capacity, infile, size_series);
@@ -150,6 +146,7 @@ int run_list_algos(string input_path, string& outfile,
                     f << instance_name << "\t" << row_str << "\n";
                     f.flush();
                 }
+                cout << endl;
             }
         }
     }
@@ -161,42 +158,50 @@ int run_list_algos(string input_path, string& outfile,
 
 int main(int argc, char** argv)
 {
-    string input_path = "/nobackup/scscm/TClab_data/largeTS/";
-    string output_path = "/nobackup/scscm/output/";
-
     int bin_cpu_capacity;
     int bin_mem_capacity;
+    string data_path;
     int size;
-    string graph;
     if (argc > 4)
     {
         bin_cpu_capacity = stoi(argv[1]);
         bin_mem_capacity = stoi(argv[2]);
-        size = stoi(argv[3]);
-        graph = argv[4];
+        data_path = argv[3];
+        size = stoi(argv[4]);
     }
     else
     {
-        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <size> <graph_class>" << endl;
+        cout << "Usage: " << argv[0] << " <bin_cpu_capacity> <bin_mem_capacity> <data_path> <size>" << endl;
         return -1;
     }
 
-    string outfile(output_path + "largeTS_" + graph + "_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(size) + ".csv");
+    string input_path = data_path + "/input/largeTS/";
+    string outfile(data_path + "/results/largeTS_" + to_string(bin_cpu_capacity) + "_" + to_string(bin_mem_capacity) + "_" + to_string(size) + ".csv");
 
     vector<string> list_algos = {
-        "FF",
-        //"FFD-Degree",
-        //"BFD-Avg",
-        //"WFD-AvgExpo",
+        // Only keep algos in paper plots
+        "FF", "FFD-Degree",
+
+        //"FFD-Avg", "FFD-Max",
+        //"FFD-AvgExpo", "FFD-Surrogate",
+
+        "BFD-Avg", //"BFD-Max",
+        //"BFD-AvgExpo", "BFD-Surrogate",
+
+        //"WFD-Avg", "WFD-Max",
+        "WFD-AvgExpo", //"WFD-Surrogate",
     };
 
     vector<string> list_spread = {
-        "SpreadWFD-Avg"
+        "SpreadWFD-Avg",
+        /*"SpreadWFD-Max",
+        "SpreadWFD-Surrogate",
+        "RefineWFD-Avg-2",
+        "RefineWFD-Avg-3",
+        "RefineWFD-Avg-5",*/
     };
 
-    run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, size, graph);
+    run_list_algos(input_path, outfile, list_algos, list_spread, bin_cpu_capacity, bin_mem_capacity, size);
 
     return 0;
 }
-
-

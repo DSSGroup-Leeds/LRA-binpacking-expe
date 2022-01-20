@@ -23,7 +23,6 @@ let
                     ps.numpy
                     ps.pandas
                     ps.matplotlib
-                    #ps.ipython
                 ]))
                 pkgs.jupyter
             ];
