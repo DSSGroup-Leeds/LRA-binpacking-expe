@@ -18,6 +18,7 @@ Then, the scripts `generate_higher_density.py` and `generate_large_scale.py` can
 Building executables
 ====================
 
+The only dependency for building executables is cmake.
 We use [Nix](https://nixos.org/) as a package manager.
 `default.nix` file contains a recipe to build all executables needed.
 With Nix installed, simply run `nix-build default.nix -A binpack` and nix will do the rest and create a `result/bin` folder with all built executables.
