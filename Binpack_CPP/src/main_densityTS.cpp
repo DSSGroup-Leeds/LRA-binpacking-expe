@@ -189,9 +189,9 @@ int main(int argc, char** argv)
 
     vector<string> list_spread = {
         "SpreadWFD-Avg",
+        "RefineWFD-Avg-2",
         /*"SpreadWFD-Max",
         "SpreadWFD-Surrogate",
-        "RefineWFD-Avg-2",
         "RefineWFD-Avg-3",
         "RefineWFD-Avg-5",*/
     };
