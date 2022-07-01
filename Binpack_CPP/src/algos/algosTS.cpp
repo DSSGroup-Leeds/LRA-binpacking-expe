@@ -684,7 +684,7 @@ AlgoTSWFDAvg::AlgoTSWFDAvg(const InstanceTS &instance):
 { }
 
 void AlgoTSWFDAvg::sortBins() {
-    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+    bubble_bin_down(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
 }
 
 /************ Worst Fit Decreasing Max Affinity *********/
@@ -693,7 +693,7 @@ AlgoTSWFDMax::AlgoTSWFDMax(const InstanceTS &instance):
 { }
 
 void AlgoTSWFDMax::sortBins() {
-    bubble_bin_up(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
+    bubble_bin_down(bins.begin() + curr_bin_index, bins.end(), bin2D_comparator_measure_decreasing);
 }
 
 

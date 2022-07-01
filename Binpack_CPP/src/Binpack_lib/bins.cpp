@@ -220,6 +220,30 @@ void bubble_bin_up(BinList2D::iterator first, BinList2D::iterator last, bool com
 }
 
 
+// Perform one round of bubble downwards
+void bubble_bin_down(BinList2D::iterator first, BinList2D::iterator last, bool comp(Bin2D*, Bin2D*))
+{
+    if (first == last)
+        return; // Empty list...
+
+    auto next = first;
+    next++;
+    if (next == last) // There is only one element in the list
+        return;
+
+    auto current = first;
+    while(next != last)
+    {
+        if (comp(*next, *current))
+        {
+            std::iter_swap(current, next);
+        }
+        ++current;
+        ++next;
+    }
+}
+
+
 
 
 BinTS::BinTS(int id, int max_cpu_capacity, int max_mem_capacity, size_t size_TS):
@@ -326,6 +350,30 @@ void bubble_bin_up(BinListTS::iterator first, BinListTS::iterator last, bool com
     if (comp(*current, *previous))
     {
         std::iter_swap(current, previous);
+    }
+}
+
+
+// Perform one round of bubble downwards
+void bubble_bin_down(BinListTS::iterator first, BinListTS::iterator last, bool comp(BinTS*, BinTS*))
+{
+    if (first == last)
+        return; // Empty list...
+
+    auto next = first;
+    next++;
+    if (next == last) // There is only one element in the list
+        return;
+
+    auto current = first;
+    while(next != last)
+    {
+        if (comp(*next, *current))
+        {
+            std::iter_swap(current, next);
+        }
+        ++current;
+        ++next;
     }
 }
 

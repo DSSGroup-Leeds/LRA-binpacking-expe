@@ -70,6 +70,7 @@ bool bin2D_comparator_measure_increasing(Bin2D* bina, Bin2D* binb);
 bool bin2D_comparator_measure_decreasing(Bin2D* bina, Bin2D* binb);
 
 void bubble_bin_up(BinList2D::iterator first, BinList2D::iterator last, bool comp(Bin2D*, Bin2D*));
+void bubble_bin_down(BinList2D::iterator first, BinList2D::iterator last, bool comp(Bin2D*, Bin2D*));
 
 class BinTS : public Bin2D
 {
@@ -94,5 +95,6 @@ private:
 };
 
 void bubble_bin_up(BinListTS::iterator first, BinListTS::iterator last, bool comp(Bin2D*, Bin2D*));
+void bubble_bin_down(BinListTS::iterator first, BinListTS::iterator last, bool comp(Bin2D*, Bin2D*));
 
 #endif // BINS_HPP
