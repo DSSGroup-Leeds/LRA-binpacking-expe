@@ -1052,15 +1052,8 @@ int Algo2DSpreadWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
     // First, try to find a solution with UB_bins
     if (!trySolve(UB_bins))
     {
-        // If no solution found, refine values of LB and increase UB
-        bool sol_found = false;
-        while (!sol_found)
-        {
-            LB_bins = UB_bins+1; // No solution was found, UB+1 is a new lower bound
-            UB_bins += 51; // +1 to be in par with the +1 of LB
-
-            sol_found = trySolve(UB_bins);
-        }
+        // If no solution found, stop and keep solution of UB
+        return UB_bins;
     }
 
     // Store the current solution
@@ -1348,18 +1341,8 @@ int Algo2DRefineWFDAvg::solveInstanceSpread(int LB_bins, int UB_bins)
     // First, try to find a solution with UB_bins
     if (!trySolve(UB_bins))
     {
-        // This may be not usefull if value of UB comes from a WFD algorithm?
-
-        // If no solution found, refine values of LB and increase UB
-        bool sol_found = false;
-        while (!sol_found)
-        {
-            LB_bins = UB_bins+1; // No solution was found, UB+1 is a new lower bound
-            UB_bins += refine_step+1; // +1 to be in par with the +1 of LB
-
-            sol_found = trySolve(UB_bins);
-        }
-        best_sol = UB_bins;
+        // If no solution found, stop and return UB
+        return UB_bins;
     }
     else
     {
