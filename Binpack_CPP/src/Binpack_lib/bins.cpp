@@ -355,7 +355,7 @@ void bubble_bin_up(BinListTS::iterator first, BinListTS::iterator last, bool com
 
 
 // Perform one round of bubble downwards
-void bubble_bin_down(BinListTS::iterator first, BinListTS::iterator last, bool comp(BinTS*, BinTS*))
+void bubble_bin_down(BinListTS::iterator first, BinListTS::iterator last, bool comp(Bin2D*, Bin2D*))
 {
     if (first == last)
         return; // Empty list...
